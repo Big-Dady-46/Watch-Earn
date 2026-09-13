@@ -31,10 +31,10 @@ export default function LeaderboardPage() {
           <span>Worker Hall of Fame</span>
         </div>
         <h1 className="text-2xl sm:text-4xl font-black text-[#111827] tracking-tight">
-          Weekly Top Earners
+          Weekly Top 10 Earners
         </h1>
         <p className="text-xs sm:text-sm text-[#64748B] max-w-lg mx-auto leading-relaxed font-medium">
-          Verified rankings of workers with the highest watch time and task completion earnings in Rupees.
+          Verified rankings of the Top 10 workers with the highest watch time and task completion earnings in Rupees.
         </p>
       </div>
 
@@ -96,9 +96,14 @@ export default function LeaderboardPage() {
       {/* Complete Rankings or Clean Empty State */}
       {users.length > 0 ? (
         <div className="ivory-card bg-white rounded-3xl p-6 sm:p-8 space-y-4">
-          <h3 className="text-base font-bold text-[#111827] flex items-center gap-2 border-b border-black/[0.05] pb-3">
-            <Flame className="w-4 h-4 text-orange-500" />
-            <span>Complete Worker Rankings</span>
+          <h3 className="text-base font-bold text-[#111827] flex items-center justify-between border-b border-black/[0.05] pb-3">
+            <div className="flex items-center gap-2">
+              <Flame className="w-4 h-4 text-orange-500" />
+              <span>Top 10 Worker Rankings</span>
+            </div>
+            <span className="text-xs text-[#12544F] font-bold px-2.5 py-0.5 rounded-md bg-[#8BBB92]/20">
+              Only Top 10 Show
+            </span>
           </h3>
 
           <div className="divide-y divide-black/[0.05]">

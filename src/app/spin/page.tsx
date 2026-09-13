@@ -15,10 +15,10 @@ export default function SpinPage() {
           <span>Daily Bonus Wheel</span>
         </div>
         <h1 className="text-2xl sm:text-4xl font-black text-[#111827] tracking-tight">
-          Daily Lucky Spin & Win
+          Lucky Spin & Win
         </h1>
         <p className="text-xs sm:text-sm text-[#64748B] max-w-lg mx-auto leading-relaxed font-medium">
-          Har 24 ghante baad wheel spin karein aur muft me bonus cash rewards jeetein!
+          Har spin par sirf Rs. 1 PKR fee lagti hai. Wheel ghuma kar cash rewards jeetein!
         </p>
       </div>
 
@@ -37,9 +37,9 @@ export default function SpinPage() {
             <Sparkles className="w-5 h-5 text-amber-500" />
           </div>
           <div>
-            <h4 className="text-sm font-bold text-[#111827]">Daily Streak Reward</h4>
+            <h4 className="text-sm font-bold text-[#111827]">Fair Odds & Alternating Slices</h4>
             <p className="text-xs text-[#64748B] mt-1 font-medium leading-relaxed">
-              Rozana aakar spin karne se aap ka withdrawal target buhat jald poora ho sakta hai.
+              Wheel board par aik slice Khaali aur aik Inam wala hota hai. Lucky workers Rs. 1, Rs. 2, ya Rs. 3+ jeet saktay hain!
             </p>
           </div>
         </div>
@@ -49,9 +49,9 @@ export default function SpinPage() {
             <Coins className="w-5 h-5 text-[#12544F]" />
           </div>
           <div>
-            <h4 className="text-sm font-bold text-[#111827]">Instant Credit</h4>
+            <h4 className="text-sm font-bold text-[#111827]">Instant Wallet Credit</h4>
             <p className="text-xs text-[#64748B] mt-1 font-medium leading-relaxed">
-              Jo bhi prize wheel par aayega, baghair kisi shart ke foran aapke wallet balance me add ho jayega.
+              Inam foran aapke wallet balance me add hota hai jisko aap EasyPaisa ya JazzCash me withdraw kar saktay hain.
             </p>
           </div>
         </div>

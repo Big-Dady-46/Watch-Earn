@@ -905,17 +905,19 @@ export function creditCoins(amountPKR: number, reason: string) {
 }
 
 export function getLeaderboard() {
+  const currentUser = getCurrentUser();
   const users = getAllUsers().filter((u) => u.role !== 'admin');
   if (users.length === 0) return [];
   return users
-    .sort((a, b) => b.totalEarnedPKR - a.totalEarnedPKR)
+    .sort((a, b) => (b.totalEarnedPKR || 0) - (a.totalEarnedPKR || 0))
+    .slice(0, 10)
     .map((u, idx) => ({
       rank: idx + 1,
       name: u.name,
       avatar: idx === 0 ? '👑' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : '🌟',
-      coins: u.balancePKR,
+      coins: u.balancePKR || 0,
       videosWatched: u.taskHistory?.length || 0,
-      isCurrentUser: false,
+      isCurrentUser: currentUser ? currentUser.id === u.id : false,
     }));
 }
 
