@@ -18,7 +18,8 @@ import {
   TrendingUp,
   Tv,
   HelpCircle,
-  Zap
+  Zap,
+  Gift
 } from 'lucide-react';
 import { getTasks, getCurrentUser, getMinimumWithdrawal, getCategories } from '@/lib/storage';
 import { VideoTask, UserAccount } from '@/types';
@@ -291,15 +292,15 @@ export default function HomePage() {
             </div>
 
             <Link
-              href="/admin"
+              href="/spin"
               onClick={() => sounds.playClick()}
               className="ivory-card p-4 bg-white flex flex-col items-center justify-center text-center gap-2 group hover:border-[#12544F]/40 transition-all"
             >
-              <div className="w-10 h-10 rounded-2xl bg-slate-100 text-[#111827] flex items-center justify-center group-hover:scale-110 transition-transform">
-                <ShieldCheck className="w-5 h-5" />
+              <div className="w-10 h-10 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Gift className="w-5 h-5 text-amber-500" />
               </div>
-              <span className="text-xs font-bold text-[#111827]">Admin Center</span>
-              <span className="text-[10px] text-[#64748B] font-medium">Authorized Portal</span>
+              <span className="text-xs font-bold text-[#111827]">Daily Spin</span>
+              <span className="text-[10px] text-[#12544F] font-semibold">Bonus PKR</span>
             </Link>
 
           </div>
@@ -428,16 +429,16 @@ export default function HomePage() {
         ) : (
           <div className="p-10 text-center ivory-card bg-white rounded-2xl space-y-2.5">
             <Tv className="w-8 h-8 text-[#12544F] mx-auto opacity-75" />
-            <h3 className="text-sm font-black text-[#111827]">No Tasks Published Yet</h3>
+            <h3 className="text-sm font-black text-[#111827]">Daily Tasks Updating</h3>
             <p className="text-xs text-[#64748B] max-w-sm mx-auto font-medium">
-              The daily tasks feed is fresh and ready for launch. Paste any YouTube video link in the Admin Portal to publish tasks!
+              New YouTube video watch tasks are updated daily. In the meantime, spin the lucky bonus wheel to win free PKR!
             </p>
             <Link
-              href="/admin"
+              href="/spin"
               className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#12544F] text-white text-xs font-bold shadow-sm hover:bg-[#0E423E] transition-all"
             >
-              <span>Go to Admin Portal</span>
-              <ArrowRight className="w-3.5 h-3.5" />
+              <Gift className="w-3.5 h-3.5" />
+              <span>Spin & Win Bonus</span>
             </Link>
           </div>
         )}

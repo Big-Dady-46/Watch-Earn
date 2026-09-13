@@ -15,7 +15,7 @@ import {
   Sparkles,
   ArrowUpRight
 } from 'lucide-react';
-import { getCurrentUser, logoutUser, getAdminNotifications } from '@/lib/storage';
+import { getCurrentUser, logoutUser } from '@/lib/storage';
 import { UserAccount } from '@/types';
 import { sounds } from '@/lib/audio';
 import AuthModal from './AuthModal';
@@ -24,12 +24,9 @@ export default function Navbar() {
   const pathname = usePathname();
   const [user, setUser] = useState<UserAccount | null>(null);
   const [authModalOpen, setAuthModalOpen] = useState(false);
-  const [unreadNotifs, setUnreadNotifs] = useState(0);
 
   const updateState = () => {
     setUser(getCurrentUser());
-    const notifs = getAdminNotifications();
-    setUnreadNotifs(notifs.filter((n) => !n.read).length);
   };
 
   useEffect(() => {
@@ -46,7 +43,8 @@ export default function Navbar() {
     { name: 'Dashboard', href: '/' },
     { name: 'Daily Tasks', href: '/tasks', badge: '1 PKR/Min' },
     { name: 'Withdrawal', href: '/wallet' },
-    { name: 'Admin Portal', href: '/admin', notificationCount: unreadNotifs },
+    { name: 'Spin & Win', href: '/spin' },
+    { name: 'Leaderboard', href: '/leaderboard' },
   ];
 
   return (
@@ -122,11 +120,6 @@ export default function Navbar() {
                         {item.badge}
                       </span>
                     )}
-                    {item.notificationCount ? (
-                      <span className="px-1.5 py-0.5 text-[9px] font-black rounded-full bg-[#12544F] text-white animate-pulse">
-                        {item.notificationCount}
-                      </span>
-                    ) : null}
                   </Link>
                 );
               })}
@@ -167,21 +160,6 @@ export default function Navbar() {
                 <div className="hidden sm:flex w-5 h-5 rounded-lg bg-[#F8F9F8] group-hover:bg-[#12544F] group-hover:text-white text-[#64748B] items-center justify-center transition-all ml-0.5">
                   <ArrowUpRight className="w-3 h-3 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
                 </div>
-              </Link>
-
-              {/* Admin Bell */}
-              <Link
-                href="/admin"
-                onClick={() => sounds.playClick()}
-                className="relative p-2.5 rounded-2xl bg-white border border-black/[0.06] text-[#111827] hover:bg-slate-50 transition-colors shadow-sm"
-                title="Admin Notifications"
-              >
-                <Bell className="w-4 h-4 text-[#111827]" />
-                {unreadNotifs > 0 && (
-                  <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#12544F] text-white text-[9px] font-black flex items-center justify-center animate-pulse">
-                    {unreadNotifs}
-                  </span>
-                )}
               </Link>
 
               {/* Login / Profile */}

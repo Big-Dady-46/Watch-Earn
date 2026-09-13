@@ -124,8 +124,11 @@ export default function RootLayout({
                   <Link href="/wallet" className="px-3.5 py-1.5 rounded-xl bg-white border border-black/[0.06] text-[#111827] font-semibold hover:border-[#12544F] transition-colors shadow-sm">
                     Withdrawal
                   </Link>
-                  <Link href="/admin" className="px-3.5 py-1.5 rounded-xl bg-[#12544F]/10 text-[#12544F] font-bold border border-[#12544F]/20">
-                    Admin Portal
+                  <Link href="/spin" className="px-3.5 py-1.5 rounded-xl bg-white border border-black/[0.06] text-[#111827] font-semibold hover:border-[#12544F] transition-colors shadow-sm">
+                    Daily Spin
+                  </Link>
+                  <Link href="/refer" className="px-3.5 py-1.5 rounded-xl bg-white border border-black/[0.06] text-[#111827] font-semibold hover:border-[#12544F] transition-colors shadow-sm">
+                    Invite & Earn
                   </Link>
                 </div>
               </div>
