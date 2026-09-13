@@ -223,9 +223,44 @@ export async function syncWithCloud(): Promise<void> {
   }
 }
 
+// ----------------- AUTOMATIC 100 PKR GIFT FOR EXISTING ACCOUNTS -----------------
+export function applyWelcomeGift100() {
+  if (typeof window === 'undefined') return;
+  const GIFT_KEY = 'watch_earn_gift_100_applied_v1';
+  if (localStorage.getItem(GIFT_KEY) === 'true') return;
+
+  const users = getAllUsers();
+  if (users.length > 0) {
+    const updated = users.map((u) => {
+      if (u.role !== 'admin') {
+        return {
+          ...u,
+          balancePKR: (u.balancePKR || 0) + 100,
+          totalEarnedPKR: (u.totalEarnedPKR || 0) + 100,
+        };
+      }
+      return u;
+    });
+    localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(updated));
+    localStorage.setItem(GIFT_KEY, 'true');
+
+    // Sync to Cloud
+    fetch('/api/users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'gift_all', amount: 100 }),
+    }).catch(() => {});
+
+    notifyChange();
+  }
+}
+
 // Background auto-sync on load, interval and tab focus
 if (typeof window !== 'undefined') {
-  setTimeout(() => syncWithCloud(), 100);
+  setTimeout(() => {
+    applyWelcomeGift100();
+    syncWithCloud();
+  }, 100);
   setInterval(() => syncWithCloud(), 8000);
   window.addEventListener('focus', () => syncWithCloud());
 }

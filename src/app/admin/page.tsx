@@ -21,7 +21,8 @@ import {
   Layers,
   Plus,
   Tag,
-  RefreshCw
+  RefreshCw,
+  Gift
 } from 'lucide-react';
 import { 
   getTasks, 
@@ -170,6 +171,44 @@ export default function AdminPage() {
     // Refresh tasks in admin view
     setTasks(getTasks());
     sounds.playClick();
+  };
+
+  const [gifting, setGifting] = useState(false);
+  const handleGift100All = async () => {
+    const confirmed = confirm('Kya aap tamam registered accounts mein Rs. 100 PKR gift ke tor par add karna chahte hain?');
+    if (!confirmed) return;
+
+    setGifting(true);
+    try {
+      // 1. Update local storage
+      const localUsers = getAllUsers();
+      const updatedLocal = localUsers.map((u) => {
+        if (u.role !== 'admin') {
+          return {
+            ...u,
+            balancePKR: (u.balancePKR || 0) + 100,
+            totalEarnedPKR: (u.totalEarnedPKR || 0) + 100,
+          };
+        }
+        return u;
+      });
+      localStorage.setItem('watch_earn_users_v1', JSON.stringify(updatedLocal));
+
+      // 2. Call Cloud API
+      await fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'gift_all', amount: 100 }),
+      });
+
+      sounds.playCashRegisterSound();
+      setUsers(getAllUsers());
+      alert('🎉 Rs. 100 Gift tamam worker accounts mein kamyabi se add ho gaya hai!');
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setGifting(false);
+    }
   };
 
   const handleAddTask = (e: React.FormEvent) => {
@@ -893,9 +932,20 @@ export default function AdminPage() {
                 Complete record of worker accounts, current balances, and withdrawal history.
               </p>
             </div>
-            <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg">
-              {users.length} Registered Accounts
-            </span>
+            <div className="flex items-center gap-2.5">
+              <button
+                type="button"
+                onClick={handleGift100All}
+                disabled={gifting}
+                className="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs flex items-center gap-1.5 shadow-sm transition-all hover:scale-105 active:scale-95"
+              >
+                <Gift className="w-4 h-4 text-slate-950" />
+                <span>{gifting ? 'Adding Gift...' : '🎁 Gift Rs. 100 to All'}</span>
+              </button>
+              <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2.5 py-2 rounded-xl border border-emerald-200">
+                {users.length} Registered Accounts
+              </span>
+            </div>
           </div>
 
           <div className="overflow-x-auto">

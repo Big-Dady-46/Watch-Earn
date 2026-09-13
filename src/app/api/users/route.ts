@@ -100,6 +100,23 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: true, user });
     }
 
+    // Gift PKR to all worker accounts
+    if (action === 'gift_all') {
+      const amount = Number(body.amount) || 100;
+      const updated = users.map((u) => {
+        if (u.role !== 'admin') {
+          return {
+            ...u,
+            balancePKR: (u.balancePKR || 0) + amount,
+            totalEarnedPKR: (u.totalEarnedPKR || 0) + amount,
+          };
+        }
+        return u;
+      });
+      await setCloudData(USERS_KEY, updated);
+      return NextResponse.json({ success: true, count: updated.length, users: updated.map(({ password: _, ...u }) => u) });
+    }
+
     // Bulk sync for re-hydration
     if (action === 'bulk_sync' && Array.isArray(body.users)) {
       const merged = [...users];
