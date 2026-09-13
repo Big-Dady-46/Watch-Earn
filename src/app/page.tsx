@@ -49,10 +49,13 @@ export default function HomePage() {
   }, []);
 
   const filteredTasks = tasks.filter((t) => {
-    if (!t.active) return false;
-    const matchesCat = selectedCategory === 'All' || t.category.toLowerCase() === selectedCategory.toLowerCase();
-    const matchesSearch = t.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          t.channelName.toLowerCase().includes(searchQuery.toLowerCase());
+    if (!t || !t.active) return false;
+    const cat = t.category || '';
+    const title = t.title || '';
+    const channel = t.channelName || '';
+    const matchesCat = selectedCategory === 'All' || cat.toLowerCase() === selectedCategory.toLowerCase();
+    const matchesSearch = title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          channel.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCat && matchesSearch;
   });
 

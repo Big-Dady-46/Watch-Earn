@@ -60,10 +60,11 @@ export default function TasksPage() {
   const completedIds = user?.completedTasksToday || [];
 
   const filteredTasks = tasks.filter((t) => {
-    if (!t.active) return false;
+    if (!t || !t.active) return false;
     const isDone = completedIds.includes(t.id);
+    const cat = t.category || '';
     const matchesStatus = filterMode === 'all' || (filterMode === 'pending' ? !isDone : isDone);
-    const matchesCat = selectedCategory === 'All' || t.category.toLowerCase() === selectedCategory.toLowerCase();
+    const matchesCat = selectedCategory === 'All' || cat.toLowerCase() === selectedCategory.toLowerCase();
     return matchesStatus && matchesCat;
   });
 
