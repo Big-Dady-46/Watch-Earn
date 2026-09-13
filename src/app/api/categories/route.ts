@@ -20,6 +20,12 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
+
+    if (body.action === 'bulk_sync' && Array.isArray(body.categories)) {
+      await setCloudData(CATEGORIES_KEY, body.categories);
+      return NextResponse.json({ success: true, categories: body.categories });
+    }
+
     const name = (body.name || '').trim();
 
     if (!name) {

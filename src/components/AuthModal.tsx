@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { X, User, Mail, Phone, Lock, ArrowRight, ShieldCheck } from 'lucide-react';
-import { registerUser, loginUser } from '@/lib/storage';
+import { X, User, Mail, Phone, Lock, ArrowRight, ShieldCheck, Loader2 } from 'lucide-react';
+import { registerUser, loginUserAsync } from '@/lib/storage';
 import { sounds } from '@/lib/audio';
 
 interface AuthModalProps {
@@ -26,6 +26,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }: Au
 
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!isOpen) return null;
 
@@ -42,36 +43,43 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }: Au
     const res = registerUser(name, email, phone, password);
     if (res.success) {
       sounds.playCashRegisterSound();
-      setSuccess('Account created successfully!');
+      setSuccess('Account created successfully! Logging you in...');
       setTimeout(() => {
         onClose();
-      }, 1000);
+      }, 900);
     } else {
       sounds.playClick();
       setError(res.message);
     }
   };
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setSuccess('');
 
     if (!loginIdentifier.trim() || !loginPassword.trim()) {
-      setError('Please enter your email/phone and password.');
+      setError('Please enter your mobile number/email and password.');
       return;
     }
 
-    const res = loginUser(loginIdentifier, loginPassword);
-    if (res.success) {
-      sounds.playCashRegisterSound();
-      setSuccess(`Welcome back, ${res.user?.name}!`);
-      setTimeout(() => {
-        onClose();
-      }, 800);
-    } else {
-      sounds.playClick();
-      setError(res.message);
+    setIsSubmitting(true);
+    try {
+      const res = await loginUserAsync(loginIdentifier, loginPassword);
+      if (res.success) {
+        sounds.playCashRegisterSound();
+        setSuccess(`Welcome back, ${res.user?.name}!`);
+        setTimeout(() => {
+          onClose();
+        }, 700);
+      } else {
+        sounds.playClick();
+        setError(res.message);
+      }
+    } catch {
+      setError('Failed to log in. Please check your connection.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -192,10 +200,20 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }: Au
 
             <button
               type="submit"
-              className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-md shadow-emerald-600/20 transition-all flex items-center justify-center gap-2"
+              disabled={isSubmitting}
+              className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60 text-white font-bold text-sm shadow-md shadow-emerald-600/20 transition-all flex items-center justify-center gap-2"
             >
-              <span>Login to Account</span>
-              <ArrowRight className="w-4 h-4" />
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Verifying Credentials...</span>
+                </>
+              ) : (
+                <>
+                  <span>Login to Account</span>
+                  <ArrowRight className="w-4 h-4" />
+                </>
+              )}
             </button>
           </form>
         ) : (

@@ -154,14 +154,21 @@ export default function AdminPage() {
 
   const handleDeleteCategory = (catToDelete: string) => {
     if (categories.length <= 1) {
-      alert('At least one category must exist!');
+      alert('At least one category must remain on the platform!');
       return;
     }
+    const confirmed = confirm(
+      `Are you sure you want to remove the category "${catToDelete}"? Any tasks using it will be automatically re-assigned.`
+    );
+    if (!confirmed) return;
+
     const updated = deleteCategory(catToDelete);
     setCategories(updated);
     if (category.toLowerCase() === catToDelete.toLowerCase()) {
       setCategory(updated[0] || 'General');
     }
+    // Refresh tasks in admin view
+    setTasks(getTasks());
     sounds.playClick();
   };
 
@@ -518,211 +525,282 @@ export default function AdminPage() {
       {activeTab === 'tasks' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
-          {/* Left 1 Col: 1-Click Task Input Form */}
-          <div className="white-card p-6 rounded-3xl border border-slate-200 space-y-6">
-            <div>
-              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <PlusCircle className="w-5 h-5 text-emerald-600" />
-                <span>1-Click Add Daily Task</span>
-              </h3>
-              <p className="text-xs text-slate-500 mt-1">
-                Paste YouTube link below. The system automatically fetches metadata and calculates 1 PKR/minute!
-              </p>
-            </div>
-
-            {addSuccess && (
-              <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                <span>Task published to daily worker feed!</span>
-              </div>
-            )}
-
-            <form onSubmit={handleAddTask} className="space-y-4">
-              
-              {/* YouTube Link */}
+          {/* Left 1 Col: 1-Click Task Input Form & Dedicated Category Manager */}
+          <div className="space-y-6">
+            
+            {/* Form Card */}
+            <div className="white-card p-6 rounded-3xl border border-slate-200 space-y-6">
               <div>
-                <div className="flex items-center gap-1.5 mb-1.5">
-                  <YouTubeLogo className="w-4 h-4 shrink-0" />
-                  <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                    Paste YouTube Video Link:
-                  </label>
-                </div>
-                <input
-                  type="text"
-                  required
-                  placeholder="https://www.youtube.com/watch?v=... or Shorts"
-                  value={videoUrl}
-                  onChange={(e) => setVideoUrl(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-slate-900 text-xs focus:outline-none focus:border-emerald-500"
-                />
-              </div>
-
-              {/* Auto Preview Thumbnail & Info */}
-              {detectedId && (
-                <div className="p-3 rounded-2xl bg-slate-50 border border-emerald-200 space-y-2">
-                  <div className="flex items-center justify-between text-[11px]">
-                    <span className="font-bold text-emerald-700">Video ID: {detectedId}</span>
-                    {isAnalyzing && <span className="text-slate-400 animate-pulse">Analyzing...</span>}
-                  </div>
-                  <img
-                    src={getYouTubeThumbnail(detectedId, 'mq')}
-                    alt="Preview"
-                    className="w-full aspect-video rounded-lg object-cover"
-                  />
-                </div>
-              )}
-
-              {/* Title */}
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                  Video Task Title:
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Auto detected or custom title"
-                  value={autoTitle}
-                  onChange={(e) => setAutoTitle(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-slate-900 text-xs focus:outline-none focus:border-emerald-500"
-                />
-              </div>
-
-              {/* Channel */}
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                  Channel Name:
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. Creator Channel"
-                  value={autoChannel}
-                  onChange={(e) => setAutoChannel(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-slate-900 text-xs focus:outline-none focus:border-emerald-500"
-                />
-              </div>
-
-              {/* Duration in Minutes with Automatic PKR Reward Calculation */}
-              <div className="p-3.5 rounded-2xl bg-emerald-50/60 border border-emerald-200 space-y-2">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                    Watch Minutes:
-                  </label>
-                  <span className="text-xs font-black text-emerald-700">
-                    Reward: Rs. {calculateRewardPKR(durationMinutes)} PKR
-                  </span>
-                </div>
-                <input
-                  type="number"
-                  min={1}
-                  max={60}
-                  required
-                  value={durationMinutes}
-                  onChange={(e) => setDurationMinutes(Number(e.target.value))}
-                  className="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-slate-900 text-xs font-bold focus:outline-none focus:border-emerald-500"
-                />
-                <p className="text-[10px] text-slate-500">
-                  ⚡ 1 Minute = Rs. 1 PKR automatically calculated.
+                <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                  <PlusCircle className="w-5 h-5 text-emerald-600" />
+                  <span>1-Click Add Daily Task</span>
+                </h3>
+                <p className="text-xs text-slate-500 mt-1">
+                  Paste YouTube link below. The system automatically fetches metadata and calculates 1 PKR/minute!
                 </p>
               </div>
 
-              {/* Category */}
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-                    Category:
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => setShowAddCategory(!showAddCategory)}
-                    className="text-xs font-bold text-emerald-600 hover:text-emerald-700 flex items-center gap-1 transition-colors"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>{showAddCategory ? 'Close' : '+ Add New Category'}</span>
-                  </button>
+              {addSuccess && (
+                <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  <span>Task published to daily worker feed!</span>
+                </div>
+              )}
+
+              <form onSubmit={handleAddTask} className="space-y-4">
+                
+                {/* YouTube Link */}
+                <div>
+                  <div className="flex items-center gap-1.5 mb-1.5">
+                    <YouTubeLogo className="w-4 h-4 shrink-0" />
+                    <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                      Paste YouTube Video Link:
+                    </label>
+                  </div>
+                  <input
+                    type="text"
+                    required
+                    placeholder="https://www.youtube.com/watch?v=... or Shorts"
+                    value={videoUrl}
+                    onChange={(e) => setVideoUrl(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-slate-900 text-xs focus:outline-none focus:border-emerald-500"
+                  />
                 </div>
 
-                <select
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-slate-900 text-xs font-semibold focus:outline-none focus:border-emerald-500 bg-white"
-                >
-                  {categories.map((cat) => (
-                    <option key={cat} value={cat}>
-                      {cat}
-                    </option>
-                  ))}
-                </select>
-
-                {/* Inline Category Adder & Manager */}
-                {showAddCategory && (
-                  <div className="mt-2.5 p-3 rounded-xl bg-emerald-50/70 border border-emerald-200 space-y-2.5 animate-fadeIn">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-bold text-emerald-900 flex items-center gap-1">
-                        <Tag className="w-3.5 h-3.5" />
-                        <span>Create New Category</span>
-                      </span>
-                      <span className="text-[10px] text-emerald-600 font-semibold">Auto-saved</span>
+                {/* Auto Preview Thumbnail & Info */}
+                {detectedId && (
+                  <div className="p-3 rounded-2xl bg-slate-50 border border-emerald-200 space-y-2">
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="font-bold text-emerald-700">Video ID: {detectedId}</span>
+                      {isAnalyzing && <span className="text-slate-400 animate-pulse">Analyzing...</span>}
                     </div>
-
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="text"
-                        placeholder="e.g. Islamic, News, Sports, Vlogs..."
-                        value={newCategoryInput}
-                        onChange={(e) => setNewCategoryInput(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            handleAddCategorySubmit();
-                          }
-                        }}
-                        className="flex-1 px-3 py-1.5 rounded-lg border border-emerald-300 text-xs bg-white text-slate-900 focus:outline-none focus:border-emerald-500"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => handleAddCategorySubmit()}
-                        className="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition-all shrink-0"
-                      >
-                        Add
-                      </button>
-                    </div>
-
-                    {/* Active Categories Badges */}
-                    <div className="pt-1">
-                      <div className="text-[10px] text-slate-500 font-semibold mb-1">Active Categories:</div>
-                      <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
-                        {categories.map((c) => (
-                          <span
-                            key={c}
-                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white border border-slate-200 text-[11px] font-medium text-slate-700"
-                          >
-                            <span>{c}</span>
-                            {categories.length > 1 && (
-                              <button
-                                type="button"
-                                title={`Delete category ${c}`}
-                                onClick={() => handleDeleteCategory(c)}
-                                className="text-slate-400 hover:text-red-600 ml-0.5 text-xs font-bold leading-none"
-                              >
-                                ×
-                              </button>
-                            )}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
+                    <img
+                      src={getYouTubeThumbnail(detectedId, 'mq')}
+                      alt="Preview"
+                      className="w-full aspect-video rounded-lg object-cover"
+                    />
                   </div>
                 )}
+
+                {/* Title */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                    Video Task Title:
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Auto detected or custom title"
+                    value={autoTitle}
+                    onChange={(e) => setAutoTitle(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-slate-900 text-xs focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
+
+                {/* Channel */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                    Channel Name:
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Creator Channel"
+                    value={autoChannel}
+                    onChange={(e) => setAutoChannel(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-slate-900 text-xs focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
+
+                {/* Duration in Minutes with Automatic PKR Reward Calculation */}
+                <div className="p-3.5 rounded-2xl bg-emerald-50/60 border border-emerald-200 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                      Watch Minutes:
+                    </label>
+                    <span className="text-xs font-black text-emerald-700">
+                      Reward: Rs. {calculateRewardPKR(durationMinutes)} PKR
+                    </span>
+                  </div>
+                  <input
+                    type="number"
+                    min={1}
+                    max={60}
+                    required
+                    value={durationMinutes}
+                    onChange={(e) => setDurationMinutes(Number(e.target.value))}
+                    className="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-slate-900 text-xs font-bold focus:outline-none focus:border-emerald-500"
+                  />
+                  <p className="text-[10px] text-slate-500">
+                    ⚡ 1 Minute = Rs. 1 PKR automatically calculated.
+                  </p>
+                </div>
+
+                {/* Category */}
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                      Category:
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setShowAddCategory(!showAddCategory)}
+                      className="text-xs font-bold text-emerald-600 hover:text-emerald-700 flex items-center gap-1 transition-colors"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>{showAddCategory ? 'Close' : '+ Add New Category'}</span>
+                    </button>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={category}
+                      onChange={(e) => setCategory(e.target.value)}
+                      className="flex-1 px-3.5 py-2.5 rounded-xl border border-slate-200 text-slate-900 text-xs font-semibold focus:outline-none focus:border-emerald-500 bg-white"
+                    >
+                      {categories.map((cat) => (
+                        <option key={cat} value={cat}>
+                          {cat}
+                        </option>
+                      ))}
+                    </select>
+
+                    {categories.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteCategory(category)}
+                        title={`Delete selected "${category}" category`}
+                        className="p-2.5 rounded-xl border border-red-200 bg-red-50 text-red-600 hover:bg-red-600 hover:text-white transition-all text-xs font-bold shrink-0 flex items-center gap-1"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        <span className="hidden sm:inline">Delete</span>
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Inline Category Adder */}
+                  {showAddCategory && (
+                    <div className="mt-2.5 p-3 rounded-xl bg-emerald-50/70 border border-emerald-200 space-y-2.5 animate-fadeIn">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-bold text-emerald-900 flex items-center gap-1">
+                          <Tag className="w-3.5 h-3.5" />
+                          <span>Create New Category</span>
+                        </span>
+                        <span className="text-[10px] text-emerald-600 font-semibold">Auto-saved</span>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          placeholder="e.g. Islamic, News, Sports, Vlogs..."
+                          value={newCategoryInput}
+                          onChange={(e) => setNewCategoryInput(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleAddCategorySubmit();
+                            }
+                          }}
+                          className="flex-1 px-3 py-1.5 rounded-lg border border-emerald-300 text-xs bg-white text-slate-900 focus:outline-none focus:border-emerald-500"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleAddCategorySubmit()}
+                          className="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition-all shrink-0"
+                        >
+                          Add
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md transition-all"
+                >
+                  + Publish Daily Task (Rs. {calculateRewardPKR(durationMinutes)} PKR)
+                </button>
+
+              </form>
+            </div>
+
+            {/* Dedicated Category Manager Card */}
+            <div className="white-card p-6 rounded-3xl border border-slate-200 space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Tag className="w-4 h-4 text-emerald-600" />
+                  <h3 className="text-base font-bold text-slate-900">
+                    Category Manager ({categories.length})
+                  </h3>
+                </div>
+                <span className="text-[10px] px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 font-bold border border-emerald-200">
+                  Live Synced
+                </span>
+              </div>
+              <p className="text-xs text-slate-500">
+                Categories organize video tasks for workers. Delete any unwanted category with 1-click.
+              </p>
+
+              {/* Quick Add Bar */}
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  placeholder="New category name..."
+                  value={newCategoryInput}
+                  onChange={(e) => setNewCategoryInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleAddCategorySubmit();
+                    }
+                  }}
+                  className="flex-1 px-3 py-2 rounded-xl border border-slate-200 text-slate-900 text-xs focus:outline-none focus:border-emerald-500"
+                />
+                <button
+                  type="button"
+                  onClick={() => handleAddCategorySubmit()}
+                  className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm transition-all shrink-0 flex items-center gap-1"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Add</span>
+                </button>
               </div>
 
-              <button
-                type="submit"
-                className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md transition-all"
-              >
-                + Publish Daily Task (Rs. {calculateRewardPKR(durationMinutes)} PKR)
-              </button>
+              {/* Category Rows with Delete Option */}
+              <div className="space-y-2 pt-2 border-t border-slate-100 max-h-64 overflow-y-auto pr-1">
+                {categories.map((c) => {
+                  const count = tasks.filter((t) => (t.category || '').toLowerCase() === c.toLowerCase()).length;
+                  return (
+                    <div
+                      key={c}
+                      className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-white hover:border-slate-300 transition-all"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-slate-800">{c}</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-white border border-slate-200 text-slate-500 font-semibold">
+                          {count} {count === 1 ? 'task' : 'tasks'}
+                        </span>
+                      </div>
 
-            </form>
+                      {categories.length > 1 ? (
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteCategory(c)}
+                          className="px-2.5 py-1 rounded-lg bg-red-50 hover:bg-red-600 text-red-600 hover:text-white border border-red-200 hover:border-red-600 text-xs font-bold transition-all flex items-center gap-1"
+                          title={`Delete "${c}" category`}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>Delete</span>
+                        </button>
+                      ) : (
+                        <span className="text-[10px] text-slate-400 italic">Default</span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
           </div>
 
           {/* Right 2 Cols: Manage Existing Tasks */}

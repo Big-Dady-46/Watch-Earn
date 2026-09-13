@@ -15,6 +15,17 @@ export async function POST(req: Request) {
     const body = await req.json();
     const withdrawals = await getCloudData<WithdrawalRequest[]>(WITHDRAWALS_KEY, []);
 
+    if (body.action === 'bulk_sync' && Array.isArray(body.withdrawals)) {
+      const merged = [...withdrawals];
+      for (const w of body.withdrawals) {
+        if (!merged.some((m) => m.id === w.id)) {
+          merged.push(w);
+        }
+      }
+      await setCloudData(WITHDRAWALS_KEY, merged);
+      return NextResponse.json({ success: true, withdrawals: merged });
+    }
+
     const newRequest: WithdrawalRequest = {
       id: body.id || `w-${Date.now()}`,
       userId: body.userId,

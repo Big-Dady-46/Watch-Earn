@@ -15,6 +15,17 @@ export async function POST(req: Request) {
     const body = await req.json();
     const tasks = await getCloudData<VideoTask[]>(TASKS_KEY, []);
 
+    if (body.action === 'bulk_sync' && Array.isArray(body.tasks)) {
+      const merged = [...tasks];
+      for (const t of body.tasks) {
+        if (!merged.some((m) => m.id === t.id)) {
+          merged.push(t);
+        }
+      }
+      await setCloudData(TASKS_KEY, merged);
+      return NextResponse.json({ success: true, tasks: merged });
+    }
+
     const durationMinutes = Number(body.durationMinutes) || 1;
     const rewardPKR = calculateRewardPKR(durationMinutes);
     const durationSeconds = Number(body.durationSeconds) || durationMinutes * 60;

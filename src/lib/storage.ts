@@ -67,6 +67,19 @@ function notifyChange() {
   }
 }
 
+export function normalizePhone(input?: string): string {
+  if (!input) return '';
+  let digits = input.replace(/[^0-9]/g, '');
+  if (digits.startsWith('92') && digits.length === 12) {
+    digits = '0' + digits.substring(2);
+  } else if (digits.startsWith('0092') && digits.length === 14) {
+    digits = '0' + digits.substring(4);
+  } else if (digits.length === 10 && digits.startsWith('3')) {
+    digits = '0' + digits;
+  }
+  return digits;
+}
+
 // ----------------- REAL-TIME CLOUD SYNCHRONIZATION -----------------
 let isSyncing = false;
 
@@ -74,40 +87,113 @@ export async function syncWithCloud(): Promise<void> {
   if (typeof window === 'undefined' || isSyncing) return;
   isSyncing = true;
   try {
-    // 1. Sync Tasks from Cloud
+    // 1. Sync Tasks from Cloud (Merge & Re-hydrate, NEVER wipe)
     const tasksRes = await fetch('/api/tasks', { cache: 'no-store' });
     if (tasksRes.ok) {
       const data = await tasksRes.json();
+      const localTasks = getTasks();
       if (Array.isArray(data.tasks)) {
-        localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(data.tasks));
+        if (data.tasks.length > 0) {
+          const mergedTasks = [...data.tasks];
+          let rehydrated = false;
+          for (const lt of localTasks) {
+            if (!mergedTasks.some((t) => t.id === lt.id)) {
+              mergedTasks.push(lt);
+              rehydrated = true;
+            }
+          }
+          localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(mergedTasks));
+          if (rehydrated) {
+            fetch('/api/tasks', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ action: 'bulk_sync', tasks: mergedTasks }),
+            }).catch(() => {});
+          }
+        } else if (localTasks.length > 0) {
+          // Cloud empty, re-hydrate from local
+          fetch('/api/tasks', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'bulk_sync', tasks: localTasks }),
+          }).catch(() => {});
+        }
       }
     }
 
-    // 2. Sync Workers Directory from Cloud
+    // 2. Sync Workers Directory from Cloud (Preserve local passwords and balances)
     const usersRes = await fetch('/api/users', { cache: 'no-store' });
     if (usersRes.ok) {
       const data = await usersRes.json();
-      if (Array.isArray(data.users) && data.users.length > 0) {
-        const localUsers = getAllUsers();
-        const merged = [...localUsers];
-        for (const cu of data.users) {
-          const idx = merged.findIndex((u) => u.id === cu.id || u.phone === cu.phone);
-          if (idx >= 0) {
-            merged[idx] = { ...merged[idx], ...cu };
-          } else {
-            merged.push(cu);
+      const localUsers = getAllUsers();
+      if (Array.isArray(data.users)) {
+        if (data.users.length > 0) {
+          const merged = [...localUsers];
+          for (const cu of data.users) {
+            const idx = merged.findIndex(
+              (u) => u.id === cu.id || (u.phone && cu.phone && normalizePhone(u.phone) === normalizePhone(cu.phone))
+            );
+            if (idx >= 0) {
+              merged[idx] = {
+                ...merged[idx],
+                ...cu,
+                password: merged[idx].password || cu.password || '',
+                balancePKR: Math.max(merged[idx].balancePKR || 0, cu.balancePKR || 0),
+                totalEarnedPKR: Math.max(merged[idx].totalEarnedPKR || 0, cu.totalEarnedPKR || 0),
+                taskHistory:
+                  (merged[idx].taskHistory?.length || 0) >= (cu.taskHistory?.length || 0)
+                    ? merged[idx].taskHistory
+                    : cu.taskHistory,
+                completedTasksToday:
+                  (merged[idx].completedTasksToday?.length || 0) >= (cu.completedTasksToday?.length || 0)
+                    ? merged[idx].completedTasksToday
+                    : cu.completedTasksToday,
+              };
+            } else {
+              merged.push(cu);
+            }
           }
+          localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(merged));
+        } else if (localUsers.length > 0) {
+          fetch('/api/users', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'bulk_sync', users: localUsers }),
+          }).catch(() => {});
         }
-        localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(merged));
       }
     }
 
-    // 3. Sync Withdrawals from Cloud
+    // 3. Sync Withdrawals from Cloud (Merge & Re-hydrate)
     const withRes = await fetch('/api/withdrawals', { cache: 'no-store' });
     if (withRes.ok) {
       const data = await withRes.json();
+      const localWiths = getWithdrawals();
       if (Array.isArray(data.withdrawals)) {
-        localStorage.setItem(STORAGE_KEYS.WITHDRAWALS, JSON.stringify(data.withdrawals));
+        if (data.withdrawals.length > 0) {
+          const mergedWiths = [...data.withdrawals];
+          let rehydrated = false;
+          for (const lw of localWiths) {
+            if (!mergedWiths.some((w) => w.id === lw.id)) {
+              mergedWiths.push(lw);
+              rehydrated = true;
+            }
+          }
+          localStorage.setItem(STORAGE_KEYS.WITHDRAWALS, JSON.stringify(mergedWiths));
+          if (rehydrated) {
+            fetch('/api/withdrawals', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ action: 'bulk_sync', withdrawals: mergedWiths }),
+            }).catch(() => {});
+          }
+        } else if (localWiths.length > 0) {
+          fetch('/api/withdrawals', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'bulk_sync', withdrawals: localWiths }),
+          }).catch(() => {});
+        }
       }
     }
 
@@ -115,8 +201,17 @@ export async function syncWithCloud(): Promise<void> {
     const catRes = await fetch('/api/categories', { cache: 'no-store' });
     if (catRes.ok) {
       const data = await catRes.json();
-      if (Array.isArray(data.categories) && data.categories.length > 0) {
-        localStorage.setItem(STORAGE_KEYS.CATEGORIES, JSON.stringify(data.categories));
+      const localCats = getCategories();
+      if (Array.isArray(data.categories)) {
+        if (data.categories.length > 0) {
+          localStorage.setItem(STORAGE_KEYS.CATEGORIES, JSON.stringify(data.categories));
+        } else if (localCats.length > 0) {
+          fetch('/api/categories', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'bulk_sync', categories: localCats }),
+          }).catch(() => {});
+        }
       }
     }
 
@@ -208,13 +303,13 @@ export function saveUser(user: UserAccount) {
 
 export function registerUser(name: string, email: string, phone: string, password: string): { success: boolean; message: string; user?: UserAccount } {
   const users = getAllUsers();
-  const cleanPhone = phone.trim().replace(/[^0-9]/g, '');
+  const cleanPhone = normalizePhone(phone) || phone.trim().replace(/[^0-9]/g, '');
   const cleanEmail = email.trim().toLowerCase();
 
   if (users.some((u) => u.email.toLowerCase() === cleanEmail)) {
     return { success: false, message: 'This email is already registered. Please login.' };
   }
-  if (users.some((u) => u.phone.replace(/[^0-9]/g, '') === cleanPhone)) {
+  if (users.some((u) => normalizePhone(u.phone) === cleanPhone)) {
     return { success: false, message: 'This mobile number is already registered. Please login.' };
   }
 
@@ -262,19 +357,33 @@ export function registerUser(name: string, email: string, phone: string, passwor
   return { success: true, message: 'Account created successfully!', user: newUser };
 }
 
-export function loginUser(emailOrPhone: string, password: string): { success: boolean; message: string; user?: UserAccount } {
+export function findUserByCredentials(emailOrPhone: string, password?: string): UserAccount | null {
   const users = getAllUsers();
   const query = emailOrPhone.trim().toLowerCase();
-  const queryCleanPhone = query.replace(/[^0-9]/g, '');
+  const queryPhone = normalizePhone(query);
 
-  const user = users.find(
-    (u) =>
-      (u.email.toLowerCase() === query || (queryCleanPhone && u.phone.replace(/[^0-9]/g, '') === queryCleanPhone)) &&
-      (!u.password || u.password === password)
+  return (
+    users.find((u) => {
+      const userPhone = normalizePhone(u.phone);
+      const matchesIdent =
+        u.email.toLowerCase() === query ||
+        (queryPhone && userPhone === queryPhone) ||
+        (u.phone.replace(/[^0-9]/g, '') === query.replace(/[^0-9]/g, ''));
+
+      if (!matchesIdent) return false;
+      if (password !== undefined) {
+        return !u.password || u.password === password;
+      }
+      return true;
+    }) || null
   );
+}
+
+export function loginUser(emailOrPhone: string, password: string): { success: boolean; message: string; user?: UserAccount } {
+  const user = findUserByCredentials(emailOrPhone, password);
 
   if (!user) {
-    return { success: false, message: 'Invalid email/phone or password.' };
+    return { success: false, message: 'Invalid mobile number/email or password.' };
   }
 
   if (typeof window !== 'undefined') {
@@ -283,6 +392,54 @@ export function loginUser(emailOrPhone: string, password: string): { success: bo
   }
 
   return { success: true, message: `Welcome back, ${user.name}!`, user };
+}
+
+export async function loginUserAsync(
+  emailOrPhone: string,
+  password: string
+): Promise<{ success: boolean; message: string; user?: UserAccount }> {
+  // 1. Check local cache first
+  const localMatch = findUserByCredentials(emailOrPhone, password);
+  if (localMatch) {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(STORAGE_KEYS.CURRENT_USER, localMatch.id);
+      notifyChange();
+    }
+    return { success: true, message: `Welcome back, ${localMatch.name}!`, user: localMatch };
+  }
+
+  // 2. If not found or mismatch locally, try server-side cloud authentication
+  try {
+    const res = await fetch('/api/users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'login',
+        identifier: emailOrPhone,
+        phone: emailOrPhone,
+        password,
+      }),
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      if (data.success && data.user) {
+        // Save user into local storage
+        saveUser(data.user);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(STORAGE_KEYS.CURRENT_USER, data.user.id);
+          notifyChange();
+        }
+        return { success: true, message: `Welcome back, ${data.user.name}!`, user: data.user };
+      }
+      return { success: false, message: data.error || 'Invalid mobile number/email or password.' };
+    } else {
+      const data = await res.json().catch(() => ({}));
+      return { success: false, message: data.error || 'Invalid mobile number/email or password.' };
+    }
+  } catch (err: any) {
+    return { success: false, message: 'Login failed. Please check your internet connection.' };
+  }
 }
 
 export function logoutUser() {
@@ -440,8 +597,31 @@ export function deleteCategory(name: string): string[] {
   const current = getCategories();
   const updated = current.filter((c) => c.toLowerCase() !== name.toLowerCase());
   const finalCategories = updated.length > 0 ? updated : ['General'];
+
   if (typeof window !== 'undefined') {
     localStorage.setItem(STORAGE_KEYS.CATEGORIES, JSON.stringify(finalCategories));
+
+    // Re-assign any tasks with this category to a valid category
+    const tasks = getTasks();
+    let tasksModified = false;
+    const fallbackCat = finalCategories[0] || 'General';
+    const updatedTasks = tasks.map((t) => {
+      if (t.category && t.category.toLowerCase() === name.toLowerCase()) {
+        tasksModified = true;
+        return { ...t, category: fallbackCat };
+      }
+      return t;
+    });
+
+    if (tasksModified) {
+      localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(updatedTasks));
+      fetch('/api/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'bulk_sync', tasks: updatedTasks }),
+      }).catch(() => {});
+    }
+
     notifyChange();
 
     fetch(`/api/categories?name=${encodeURIComponent(name)}`, {
