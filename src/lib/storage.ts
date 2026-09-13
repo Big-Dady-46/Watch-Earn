@@ -67,6 +67,74 @@ function notifyChange() {
   }
 }
 
+// ----------------- REAL-TIME CLOUD SYNCHRONIZATION -----------------
+let isSyncing = false;
+
+export async function syncWithCloud(): Promise<void> {
+  if (typeof window === 'undefined' || isSyncing) return;
+  isSyncing = true;
+  try {
+    // 1. Sync Tasks from Cloud
+    const tasksRes = await fetch('/api/tasks', { cache: 'no-store' });
+    if (tasksRes.ok) {
+      const data = await tasksRes.json();
+      if (Array.isArray(data.tasks)) {
+        localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(data.tasks));
+      }
+    }
+
+    // 2. Sync Workers Directory from Cloud
+    const usersRes = await fetch('/api/users', { cache: 'no-store' });
+    if (usersRes.ok) {
+      const data = await usersRes.json();
+      if (Array.isArray(data.users) && data.users.length > 0) {
+        const localUsers = getAllUsers();
+        const merged = [...localUsers];
+        for (const cu of data.users) {
+          const idx = merged.findIndex((u) => u.id === cu.id || u.phone === cu.phone);
+          if (idx >= 0) {
+            merged[idx] = { ...merged[idx], ...cu };
+          } else {
+            merged.push(cu);
+          }
+        }
+        localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(merged));
+      }
+    }
+
+    // 3. Sync Withdrawals from Cloud
+    const withRes = await fetch('/api/withdrawals', { cache: 'no-store' });
+    if (withRes.ok) {
+      const data = await withRes.json();
+      if (Array.isArray(data.withdrawals)) {
+        localStorage.setItem(STORAGE_KEYS.WITHDRAWALS, JSON.stringify(data.withdrawals));
+      }
+    }
+
+    // 4. Sync Categories from Cloud
+    const catRes = await fetch('/api/categories', { cache: 'no-store' });
+    if (catRes.ok) {
+      const data = await catRes.json();
+      if (Array.isArray(data.categories) && data.categories.length > 0) {
+        localStorage.setItem(STORAGE_KEYS.CATEGORIES, JSON.stringify(data.categories));
+      }
+    }
+
+    notifyChange();
+  } catch (err) {
+    console.warn('[Sync] Cloud sync error:', err);
+  } finally {
+    isSyncing = false;
+  }
+}
+
+// Background auto-sync on load, interval and tab focus
+if (typeof window !== 'undefined') {
+  setTimeout(() => syncWithCloud(), 100);
+  setInterval(() => syncWithCloud(), 8000);
+  window.addEventListener('focus', () => syncWithCloud());
+}
+
 // ----------------- MIDNIGHT RESET ENGINE -----------------
 function getTodayDateString(): string {
   const d = new Date();
@@ -129,6 +197,12 @@ export function saveUser(user: UserAccount) {
   if (typeof window !== 'undefined') {
     localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
     notifyChange();
+
+    fetch('/api/users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user }),
+    }).catch(console.warn);
   }
 }
 
@@ -165,6 +239,18 @@ export function registerUser(name: string, email: string, phone: string, passwor
     localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
     localStorage.setItem(STORAGE_KEYS.CURRENT_USER, newUser.id);
     notifyChange();
+
+    fetch('/api/users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'register',
+        name: newUser.name,
+        phone: newUser.phone,
+        email: newUser.email,
+        password: newUser.password,
+      }),
+    }).catch(console.warn);
   }
 
   createAdminNotification({
@@ -258,6 +344,12 @@ export function addTask(taskData: {
   if (typeof window !== 'undefined') {
     localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(updated));
     notifyChange();
+
+    fetch('/api/tasks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newTask),
+    }).catch(console.warn);
   }
   return newTask;
 }
@@ -268,6 +360,10 @@ export function deleteTask(id: string): boolean {
   if (typeof window !== 'undefined') {
     localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(filtered));
     notifyChange();
+
+    fetch(`/api/tasks?id=${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    }).catch(console.warn);
   }
   return true;
 }
@@ -280,6 +376,12 @@ export function toggleTaskStatus(id: string): boolean {
   if (typeof window !== 'undefined') {
     localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(tasks));
     notifyChange();
+
+    fetch('/api/tasks', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, active: tasks[idx].active }),
+    }).catch(console.warn);
   }
   return true;
 }
@@ -324,6 +426,12 @@ export function addCategory(name: string): string[] {
   if (typeof window !== 'undefined') {
     localStorage.setItem(STORAGE_KEYS.CATEGORIES, JSON.stringify(updated));
     notifyChange();
+
+    fetch('/api/categories', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: trimmed }),
+    }).catch(console.warn);
   }
   return updated;
 }
@@ -335,6 +443,10 @@ export function deleteCategory(name: string): string[] {
   if (typeof window !== 'undefined') {
     localStorage.setItem(STORAGE_KEYS.CATEGORIES, JSON.stringify(finalCategories));
     notifyChange();
+
+    fetch(`/api/categories?name=${encodeURIComponent(name)}`, {
+      method: 'DELETE',
+    }).catch(console.warn);
   }
   return finalCategories;
 }
@@ -455,6 +567,12 @@ export function createWithdrawalRequest(params: {
   const updated = [newWithdrawal, ...list];
   if (typeof window !== 'undefined') {
     localStorage.setItem(STORAGE_KEYS.WITHDRAWALS, JSON.stringify(updated));
+
+    fetch('/api/withdrawals', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newWithdrawal),
+    }).catch(console.warn);
   }
 
   // Send High Priority Notification to Admin
@@ -507,6 +625,12 @@ export function updateWithdrawalStatus(id: string, status: 'approved' | 'rejecte
   if (typeof window !== 'undefined') {
     localStorage.setItem(STORAGE_KEYS.WITHDRAWALS, JSON.stringify(list));
     notifyChange();
+
+    fetch('/api/withdrawals', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, status, note }),
+    }).catch(console.warn);
   }
   return true;
 }

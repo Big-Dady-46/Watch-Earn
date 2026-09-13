@@ -20,7 +20,8 @@ import {
   ExternalLink,
   Layers,
   Plus,
-  Tag
+  Tag,
+  RefreshCw
 } from 'lucide-react';
 import { 
   getTasks, 
@@ -35,7 +36,8 @@ import {
   resetStorage,
   getCategories,
   addCategory,
-  deleteCategory
+  deleteCategory,
+  syncWithCloud
 } from '@/lib/storage';
 import { VideoTask, WithdrawalRequest, UserAccount, AdminNotification } from '@/types';
 import { extractYouTubeId, getYouTubeThumbnail, calculateRewardPKR, fetchYouTubeOEmbed } from '@/lib/youtube';
@@ -59,6 +61,7 @@ export default function AdminPage() {
   const [categories, setCategories] = useState<string[]>([]);
   const [newCategoryInput, setNewCategoryInput] = useState('');
   const [showAddCategory, setShowAddCategory] = useState(false);
+  const [isSyncingCloud, setIsSyncingCloud] = useState(false);
 
   // 1-Click Add Task Form State
   const [videoUrl, setVideoUrl] = useState('');
@@ -269,7 +272,23 @@ export default function AdminPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2.5">
+          <button
+            onClick={async () => {
+              setIsSyncingCloud(true);
+              sounds.playClick();
+              await syncWithCloud();
+              loadData();
+              setTimeout(() => setIsSyncingCloud(false), 800);
+            }}
+            className="px-3.5 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-xs text-emerald-800 font-bold flex items-center gap-2 transition-all shadow-xs"
+            title="Sync latest live workers, tasks, and withdrawals from cloud database"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 text-emerald-600 ${isSyncingCloud ? 'animate-spin' : ''}`} />
+            <span>{isSyncingCloud ? 'Syncing...' : 'Live Cloud Sync'}</span>
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+          </button>
+
           <button
             onClick={() => {
               if (confirm('Are you sure you want to clear all data and start completely fresh for launch?')) {
