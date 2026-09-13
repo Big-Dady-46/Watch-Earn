@@ -12,13 +12,16 @@ import {
   ArrowRight,
   Sparkles,
   Award,
-  ExternalLink
+  Volume2,
+  VolumeX,
+  Volume1,
+  Lock,
+  ShieldAlert
 } from 'lucide-react';
 import { VideoTask } from '@/types';
 import { completeVideoTask, getCurrentUser } from '@/lib/storage';
 import { sounds } from '@/lib/audio';
 import { formatDuration } from '@/lib/youtube';
-import { YouTubeLogo } from './Logos';
 import Link from 'next/link';
 
 interface YouTubeTaskPlayerProps {
@@ -39,11 +42,15 @@ export default function YouTubeTaskPlayer({ task, isAlreadyCompleted = false }: 
   const [isCompleted, setIsCompleted] = useState(isAlreadyCompleted);
   const [rewardClaimed, setRewardClaimed] = useState(false);
   const [tabActive, setTabActive] = useState(true);
-  const [openedOnYouTube, setOpenedOnYouTube] = useState(false);
+  
+  // Custom Controls State (No timeline scrubber allowed!)
+  const [isMuted, setIsMuted] = useState(false);
+  const [volume, setVolume] = useState(80);
+  const [seekWarning, setSeekWarning] = useState<string | null>(null);
   
   const playerRef = useRef<any>(null);
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const accumulatedRef = useRef<number>(0);
+  const lastLegitTimeRef = useRef<number>(0);
 
   useEffect(() => {
     let isMounted = true;
@@ -57,22 +64,36 @@ export default function YouTubeTaskPlayer({ task, isAlreadyCompleted = false }: 
         } catch {}
       }
 
-      // Authentic YouTube Player parameters to ensure real view counting
       const origin = typeof window !== 'undefined' ? window.location.origin : '';
 
+      // playerVars:
+      // controls: 0 hides YouTube's native scrubber / forward-backward line completely!
+      // disablekb: 1 disables keyboard seeking shortcuts (arrow keys, J, L, 0-9).
+      // fs: 0 disables fullscreen mode where native seeker might reappear.
       playerRef.current = new window.YT.Player(`yt-player-${task.id}`, {
         videoId: task.youtubeId,
         width: '100%',
         height: '100%',
         playerVars: {
           autoplay: 0,
-          controls: 1,
+          controls: 0,       // NO timeline seekbar/controls!
+          disablekb: 1,      // No keyboard seeking
+          fs: 0,             // No fullscreen seeking
           rel: 0,
           playsinline: 1,
           enablejsapi: 1,
           origin: origin,
+          modestbranding: 1,
+          iv_load_policy: 3,
         },
         events: {
+          onReady: (event: any) => {
+            if (isMounted) {
+              try {
+                event.target.setVolume(80);
+              } catch {}
+            }
+          },
           onStateChange: (event: any) => {
             // YouTube Player State: 1 = PLAYING, 2 = PAUSED, 0 = ENDED
             if (event.data === 1) {
@@ -120,11 +141,36 @@ export default function YouTubeTaskPlayer({ task, isAlreadyCompleted = false }: 
     };
   }, [task.id, task.youtubeId]);
 
+  // Anti-Cheat & Anti-Forward-Seek Interceptor
+  useEffect(() => {
+    if (!isPlaying || isCompleted) return;
+
+    const antiSkipInterval = setInterval(() => {
+      if (playerRef.current && typeof playerRef.current.getCurrentTime === 'function') {
+        try {
+          const currentTime = playerRef.current.getCurrentTime();
+          // If playback somehow jumped ahead by more than 2.0 seconds
+          if (currentTime > lastLegitTimeRef.current + 2.0) {
+            playerRef.current.seekTo(lastLegitTimeRef.current, true);
+            setSeekWarning('Video aage karne ki ijazat nahi hai! Video poori watch karein.');
+            sounds.playWarningSound();
+            setTimeout(() => setSeekWarning(null), 3500);
+          } else {
+            lastLegitTimeRef.current = Math.max(lastLegitTimeRef.current, currentTime);
+          }
+        } catch {}
+      }
+    }, 400);
+
+    return () => clearInterval(antiSkipInterval);
+  }, [isPlaying, isCompleted]);
+
+  // Tab switch auto-pause
   useEffect(() => {
     const handleVisibilityChange = () => {
       const active = !document.hidden;
       setTabActive(active);
-      if (!active && playerRef.current && typeof playerRef.current.pauseVideo === 'function' && !openedOnYouTube) {
+      if (!active && playerRef.current && typeof playerRef.current.pauseVideo === 'function') {
         playerRef.current.pauseVideo();
         setIsPlaying(false);
       }
@@ -132,14 +178,14 @@ export default function YouTubeTaskPlayer({ task, isAlreadyCompleted = false }: 
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [openedOnYouTube]);
+  }, []);
 
+  // Timer countdown: strictly counts down only when video is actively playing and tab is focused
   useEffect(() => {
     if (isCompleted) return;
 
-    if ((isPlaying && tabActive) || openedOnYouTube) {
+    if (isPlaying && tabActive) {
       timerIntervalRef.current = setInterval(() => {
-        accumulatedRef.current += 1;
         setRemainingSeconds((prev) => {
           const next = prev - 1;
           if (next <= 0) {
@@ -161,7 +207,7 @@ export default function YouTubeTaskPlayer({ task, isAlreadyCompleted = false }: 
         clearInterval(timerIntervalRef.current);
       }
     };
-  }, [isPlaying, tabActive, isCompleted, openedOnYouTube]);
+  }, [isPlaying, tabActive, isCompleted]);
 
   const handleCompleteTask = () => {
     if (isCompleted) return;
@@ -185,12 +231,51 @@ export default function YouTubeTaskPlayer({ task, isAlreadyCompleted = false }: 
     });
   };
 
-  const handleOpenDirectYouTube = () => {
+  // Custom Controls Handlers
+  const togglePlayPause = () => {
     sounds.playClick();
-    setOpenedOnYouTube(true);
-    setIsPlaying(true);
-    // Direct YouTube link with autoplay for genuine native YouTube view
-    window.open(`https://www.youtube.com/watch?v=${task.youtubeId}`, '_blank', 'noopener,noreferrer');
+    if (!playerRef.current) return;
+    try {
+      if (isPlaying) {
+        playerRef.current.pauseVideo();
+        setIsPlaying(false);
+      } else {
+        playerRef.current.playVideo();
+        setIsPlaying(true);
+      }
+    } catch (err) {
+      console.error('Play/pause error:', err);
+    }
+  };
+
+  const toggleMute = () => {
+    sounds.playClick();
+    if (!playerRef.current) return;
+    try {
+      if (isMuted) {
+        playerRef.current.unMute();
+        playerRef.current.setVolume(volume || 80);
+        setIsMuted(false);
+      } else {
+        playerRef.current.mute();
+        setIsMuted(true);
+      }
+    } catch (err) {}
+  };
+
+  const handleVolumeChange = (newVol: number) => {
+    setVolume(newVol);
+    if (!playerRef.current) return;
+    try {
+      playerRef.current.setVolume(newVol);
+      if (newVol === 0) {
+        playerRef.current.mute();
+        setIsMuted(true);
+      } else if (isMuted) {
+        playerRef.current.unMute();
+        setIsMuted(false);
+      }
+    } catch (err) {}
   };
 
   const progressPercent = Math.min(
@@ -199,14 +284,24 @@ export default function YouTubeTaskPlayer({ task, isAlreadyCompleted = false }: 
   );
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       
       {/* Video Player Container */}
       <div className="relative aspect-video w-full rounded-3xl overflow-hidden bg-black shadow-xl border border-black/[0.08]">
         <div id={`yt-player-${task.id}`} className="w-full h-full" />
 
-        {/* Tab Pause Overlay when user leaves tab (unless watching directly on YouTube) */}
-        {!tabActive && !openedOnYouTube && (
+        {/* Floating Anti-Skip Warning Banner */}
+        {seekWarning && (
+          <div className="absolute top-4 left-4 right-4 z-30 flex items-center justify-center animate-bounce">
+            <div className="px-4 py-2 rounded-xl bg-red-600/95 backdrop-blur-md text-white text-xs font-bold flex items-center gap-2 shadow-2xl border border-red-400">
+              <ShieldAlert className="w-4 h-4 text-yellow-300 shrink-0" />
+              <span>{seekWarning}</span>
+            </div>
+          </div>
+        )}
+
+        {/* Tab Pause Overlay when user leaves tab */}
+        {!tabActive && (
           <div className="absolute inset-0 bg-slate-900/90 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center z-20 text-white space-y-3">
             <AlertCircle className="w-12 h-12 text-[#8BBB92] animate-bounce" />
             <div className="space-y-1">
@@ -228,39 +323,96 @@ export default function YouTubeTaskPlayer({ task, isAlreadyCompleted = false }: 
             </button>
           </div>
         )}
+
+        {/* Center Big Play Button if video is paused & not completed */}
+        {!isPlaying && !isCompleted && tabActive && (
+          <div 
+            onClick={togglePlayPause}
+            className="absolute inset-0 bg-black/40 backdrop-blur-[2px] flex flex-col items-center justify-center cursor-pointer z-10 group transition-all"
+          >
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-[#12544F] group-hover:bg-[#0E423E] text-white flex items-center justify-center shadow-2xl transform group-hover:scale-110 transition-transform">
+              <Play className="w-8 h-8 sm:w-10 sm:h-10 fill-current translate-x-0.5" />
+            </div>
+            <p className="mt-3 text-xs sm:text-sm font-extrabold text-white tracking-wide drop-shadow-md">
+              Click Here to Play & Start Earning
+            </p>
+          </div>
+        )}
       </div>
 
-      {/* Official YouTube View Verification Bar */}
-      <div className="p-4 rounded-2xl bg-white border border-black/[0.06] flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center shrink-0">
-            <YouTubeLogo className="w-6 h-6" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h4 className="text-xs font-black text-[#111827]">
-                Official YouTube View Counter Active
-              </h4>
-              <span className="px-2 py-0.5 rounded-md bg-[#8BBB92]/20 text-[#12544F] text-[10px] font-bold">
-                100% Monetized View
-              </span>
-            </div>
-            <p className="text-[11px] text-[#64748B] font-medium leading-relaxed mt-0.5">
-              Watching here or on YouTube automatically counts as a verified view for the creator.
-            </p>
+      {/* Custom Control Bar (Play/Pause, Sound/Mute/Volume, Anti-Skip Indicator - NO TIMELINE SCRUBBER) */}
+      <div className="p-3.5 sm:p-4 rounded-2xl bg-[#111827] text-white border border-slate-800 shadow-md flex flex-wrap items-center justify-between gap-3">
+        
+        {/* Left: Play/Pause & Sound Controls */}
+        <div className="flex items-center flex-wrap gap-2.5 sm:gap-3">
+          {/* Custom Play / Pause Button */}
+          <button
+            type="button"
+            onClick={togglePlayPause}
+            disabled={isCompleted}
+            className={`px-4 py-2 sm:py-2.5 rounded-xl text-xs font-extrabold flex items-center gap-2 shadow transition-all ${
+              isCompleted
+                ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                : isPlaying
+                ? 'bg-amber-600 hover:bg-amber-500 text-white hover:scale-105 active:scale-95'
+                : 'bg-[#12544F] hover:bg-[#0E423E] text-white hover:scale-105 active:scale-95'
+            }`}
+          >
+            {isPlaying ? (
+              <>
+                <Pause className="w-4 h-4 fill-current" />
+                <span>Pause</span>
+              </>
+            ) : (
+              <>
+                <Play className="w-4 h-4 fill-current" />
+                <span>Play</span>
+              </>
+            )}
+          </button>
+
+          {/* Sound Controls Divider */}
+          <div className="h-6 w-px bg-slate-800 hidden sm:block" />
+
+          {/* Mute / Unmute Button */}
+          <button
+            type="button"
+            onClick={toggleMute}
+            className="w-9 h-9 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 flex items-center justify-center transition-all hover:scale-105 active:scale-95"
+            title={isMuted ? 'Unmute' : 'Mute'}
+          >
+            {isMuted || volume === 0 ? (
+              <VolumeX className="w-4 h-4 text-red-400" />
+            ) : volume < 50 ? (
+              <Volume1 className="w-4 h-4 text-[#8BBB92]" />
+            ) : (
+              <Volume2 className="w-4 h-4 text-[#8BBB92]" />
+            )}
+          </button>
+
+          {/* Volume Slider */}
+          <div className="flex items-center gap-2">
+            <input
+              type="range"
+              min="0"
+              max="100"
+              value={isMuted ? 0 : volume}
+              onChange={(e) => handleVolumeChange(Number(e.target.value))}
+              className="w-16 sm:w-24 h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-[#8BBB92]"
+              title="Volume"
+            />
+            <span className="text-[11px] font-mono text-slate-400 w-8">
+              {isMuted ? '0%' : `${volume}%`}
+            </span>
           </div>
         </div>
 
-        {/* Direct Open in YouTube Button */}
-        <button
-          type="button"
-          onClick={handleOpenDirectYouTube}
-          className="px-4 py-2.5 rounded-xl bg-[#111827] hover:bg-black text-white text-xs font-bold flex items-center justify-center gap-2 shrink-0 transition-transform hover:scale-[1.02] shadow-sm"
-        >
-          <YouTubeLogo className="w-4 h-4" />
-          <span>Watch on YouTube App/Site</span>
-          <ExternalLink className="w-3.5 h-3.5 text-[#8BBB92]" />
-        </button>
+        {/* Right: Anti-Skip Locked Badge */}
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-800/90 border border-slate-700/70 text-[11px] font-bold text-slate-300">
+          <Lock className="w-3.5 h-3.5 text-[#8BBB92]" />
+          <span>Timeline Scrubber Locked</span>
+        </div>
+
       </div>
 
       {/* Progress & Earning Status Card */}
@@ -287,23 +439,21 @@ export default function YouTubeTaskPlayer({ task, isAlreadyCompleted = false }: 
                 <h4 className="text-sm font-extrabold text-[#111827]">
                   {isCompleted
                     ? 'Daily Task Completed!'
-                    : openedOnYouTube
-                    ? 'Watching on YouTube - Verifying Watch Minutes...'
                     : isPlaying
                     ? 'Video is Playing - Verifying Watch Minutes...'
                     : 'Video is Paused'}
                 </h4>
                 <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-[#8BBB92]/20 text-[#12544F] font-bold">
                   <ShieldCheck className="w-3 h-3 text-[#12544F]" />
-                  Anti-Cheat Active
+                  Anti-Cheat Protection
                 </span>
               </div>
               <p className="text-xs text-[#64748B] font-medium leading-relaxed">
                 {isCompleted
                   ? `Reward of Rs. ${task.rewardPKR} PKR credited to your balance!`
-                  : isPlaying || openedOnYouTube
-                  ? 'Keep watching until the countdown finishes to claim your reward.'
-                  : 'Click play on the video player above or open on YouTube to start timer.'}
+                  : isPlaying
+                  ? 'Keep watching continuously. Video scrubber is locked to ensure full watch time.'
+                  : 'Click Play button above to start watching and earn your reward.'}
               </p>
             </div>
           </div>
@@ -326,10 +476,10 @@ export default function YouTubeTaskPlayer({ task, isAlreadyCompleted = false }: 
 
         </div>
 
-        {/* Watch Progress Bar */}
+        {/* Watch Progress Bar (Read-only countdown progress) */}
         <div className="space-y-2">
           <div className="flex justify-between text-xs text-[#64748B] font-bold">
-            <span>Watch Progress</span>
+            <span>Verified Watch Progress</span>
             <span>{progressPercent}%</span>
           </div>
           <div className="w-full h-3 rounded-full bg-slate-100 overflow-hidden p-0.5 border border-black/[0.04]">
@@ -356,7 +506,7 @@ export default function YouTubeTaskPlayer({ task, isAlreadyCompleted = false }: 
                   Congratulations! +Rs. {task.rewardPKR} PKR Added to Wallet!
                 </h5>
                 <p className="text-xs text-[#12544F]/85 font-medium leading-relaxed">
-                  YouTube view successfully verified. Keep completing tasks to cashout!
+                  Video view successfully verified without skipping. Keep completing tasks to cashout!
                 </p>
               </div>
             </div>
