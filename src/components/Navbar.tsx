@@ -55,26 +55,45 @@ export default function Navbar() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16 sm:h-20">
             
-            {/* User Profile / Logo */}
+            {/* Brand Logo & Luxury Fintech Identity */}
             <div className="flex items-center gap-3">
               <Link 
                 href="/" 
                 onClick={() => sounds.playClick()}
-                className="flex items-center gap-3 group"
+                className="flex items-center gap-3.5 group select-none"
               >
-                <div className="w-10 h-10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                {/* 3D Dual Gold Coins SVG Emblem */}
+                <div className="w-12 h-12 flex items-center justify-center group-hover:scale-105 group-hover:rotate-3 transition-all duration-300 shrink-0">
                   <img
                     src="/logo.svg"
-                    alt="Watch & Earn Logo"
-                    className="w-10 h-10 object-contain drop-shadow-md"
+                    alt="Watch & Earn Gold Emblem"
+                    className="w-full h-full object-contain filter drop-shadow-[0_4px_12px_rgba(217,119,6,0.25)]"
                   />
                 </div>
-                <div>
-                  <div className="text-[10px] text-[#64748B] font-semibold tracking-wide">
-                    {user ? `Welcome,` : `Watch & Earn`}
+
+                {/* Luxury Matching Typography (Outfit + Montserrat) */}
+                <div className="flex flex-col justify-center">
+                  <div className="flex items-center gap-1.5 leading-none">
+                    <span className="font-outfit font-black text-lg sm:text-xl tracking-tight text-[#0E2A27] group-hover:text-[#12544F] transition-colors">
+                      WATCH
+                    </span>
+                    <span className="font-outfit font-black text-lg sm:text-xl tracking-tight text-[#D97706]">
+                      &amp;
+                    </span>
+                    <span className="font-outfit font-black text-lg sm:text-xl tracking-tight bg-gradient-to-r from-[#D97706] via-[#F59E0B] to-[#FBBF24] bg-clip-text text-transparent drop-shadow-xs">
+                      EARN
+                    </span>
                   </div>
-                  <div className="text-sm sm:text-base font-extrabold text-[#111827] tracking-tight">
-                    {user ? user.name : 'Worker Portal'}
+
+                  {/* Contextual Sub-label */}
+                  <div className="flex items-center gap-1.5 mt-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#12544F] animate-pulse" />
+                    <span className="text-[10px] font-extrabold tracking-wider uppercase text-[#64748B]">
+                      {user ? user.name : 'Worker Portal'}
+                    </span>
+                    <span className="px-1.5 py-0.5 rounded-md bg-[#8BBB92]/20 border border-[#8BBB92]/30 text-[9px] font-black text-[#12544F] tracking-wide">
+                      {user ? `Tier ${(user.withdrawalCount || 0) + 1}` : 'PKR REWARDS'}
+                    </span>
                   </div>
                 </div>
               </Link>

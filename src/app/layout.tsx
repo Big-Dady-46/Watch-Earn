@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Montserrat } from 'next/font/google';
+import { Montserrat, Outfit } from 'next/font/google';
 import './globals.css';
 import Navbar from '@/components/Navbar';
 import MobileBottomNav from '@/components/MobileBottomNav';
@@ -18,6 +18,13 @@ const montserrat = Montserrat({
   display: 'swap',
 });
 
+const outfit = Outfit({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700', '800', '900'],
+  variable: '--font-outfit',
+  display: 'swap',
+});
+
 export default function RootLayout({
   children,
 }: {
@@ -30,7 +37,7 @@ export default function RootLayout({
   }, []);
 
   return (
-    <html lang="en" className={`${montserrat.variable} h-full`}>
+    <html lang="en" className={`${montserrat.variable} ${outfit.variable} h-full`}>
       <head>
         <title>Watch & Earn - Real Rupees Payouts</title>
         <meta name="description" content="Watch verified YouTube videos and earn real money in PKR. Instant withdrawals via EasyPaisa, JazzCash, and Bank Accounts." />
@@ -58,17 +65,25 @@ export default function RootLayout({
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               
               <div className="space-y-3">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-10 h-10 flex items-center justify-center">
+                <div className="flex items-center gap-3">
+                  <div className="w-11 h-11 flex items-center justify-center shrink-0">
                     <img
                       src="/logo.svg"
                       alt="Watch & Earn Logo"
-                      className="w-10 h-10 object-contain drop-shadow-md"
+                      className="w-full h-full object-contain filter drop-shadow-[0_4px_10px_rgba(217,119,6,0.2)]"
                     />
                   </div>
-                  <span className="font-black text-lg tracking-tight text-[#111827]">
-                    WATCH<span className="text-[#12544F]">&</span><span className="text-[#8BBB92]">EARN</span>
-                  </span>
+                  <div className="flex items-center gap-1.5 leading-none">
+                    <span className="font-outfit font-black text-xl tracking-tight text-[#111827]">
+                      WATCH
+                    </span>
+                    <span className="font-outfit font-black text-xl tracking-tight text-[#D97706]">
+                      &amp;
+                    </span>
+                    <span className="font-outfit font-black text-xl tracking-tight bg-gradient-to-r from-[#D97706] via-[#F59E0B] to-[#FBBF24] bg-clip-text text-transparent">
+                      EARN
+                    </span>
+                  </div>
                 </div>
                 <p className="text-xs text-[#64748B] leading-relaxed max-w-sm font-medium">
                   Verified video task rewards network. Watch assigned YouTube minutes and withdraw real Rupees via <strong>EasyPaisa</strong>, <strong>JazzCash</strong>, and <strong>Bank Transfers</strong>.

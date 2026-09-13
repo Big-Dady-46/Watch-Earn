@@ -10,6 +10,10 @@
   --border-subtle: rgba(18, 84, 79, 0.08);
 }
 
+.font-outfit {
+  font-family: var(--font-outfit), 'Outfit', sans-serif;
+}
+
 body {
   background-color: var(--canvas-bg);
   color: var(--neutral-black);
