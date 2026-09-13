@@ -19,7 +19,14 @@ export default function ReferPage() {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    setUser(getCurrentUser());
+    const load = () => setUser(getCurrentUser());
+    load();
+    window.addEventListener('watch-earn-update', load);
+    window.addEventListener('storage', load);
+    return () => {
+      window.removeEventListener('watch-earn-update', load);
+      window.removeEventListener('storage', load);
+    };
   }, []);
 
   const referralCode = user?.phone ? `PKR${user.phone.slice(-4)}` : 'EARN100';

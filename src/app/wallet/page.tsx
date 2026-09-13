@@ -14,7 +14,8 @@ import {
   ShieldCheck, 
   History,
   TrendingUp,
-  Award
+  Award,
+  LogIn
 } from 'lucide-react';
 import { 
   getCurrentUser, 
@@ -25,10 +26,12 @@ import {
 import { UserAccount, WithdrawalRequest, PaymentMethod } from '@/types';
 import { sounds } from '@/lib/audio';
 import { EasyPaisaLogo, JazzCashLogo, BankLogo } from '@/components/Logos';
+import AuthModal from '@/components/AuthModal';
 
 export default function WalletPage() {
   const [user, setUser] = useState<UserAccount | null>(null);
   const [withdrawals, setWithdrawals] = useState<WithdrawalRequest[]>([]);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
   
   const [method, setMethod] = useState<PaymentMethod>('easypaisa');
   const [amountPKR, setAmountPKR] = useState<number>(100);
@@ -64,24 +67,36 @@ export default function WalletPage() {
   if (!user) {
     return (
       <div className="max-w-xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
-        <div className="ivory-card p-8 bg-white rounded-3xl space-y-4 shadow-sm">
-          <div className="w-12 h-12 rounded-2xl bg-[#12544F]/10 text-[#12544F] flex items-center justify-center mx-auto">
-            <Wallet className="w-6 h-6" />
+        <div className="ivory-card p-8 bg-white rounded-3xl space-y-4 shadow-sm border border-slate-200">
+          <div className="w-14 h-14 rounded-2xl bg-[#12544F]/10 text-[#12544F] flex items-center justify-center mx-auto">
+            <Wallet className="w-7 h-7" />
           </div>
-          <h2 className="text-xl font-black text-[#111827]">Worker Account Required</h2>
+          <h2 className="text-2xl font-black text-[#111827]">Worker Account Required</h2>
           <p className="text-xs text-[#64748B] max-w-md mx-auto leading-relaxed">
-            Please log in or register your worker account using the top navigation bar to view your balance and submit withdrawal requests.
+            Please log in or register your worker account to view your balance and submit withdrawal requests to EasyPaisa, JazzCash, or Bank.
           </p>
-          <div className="pt-2 flex justify-center gap-3">
+          <div className="pt-3 flex flex-wrap items-center justify-center gap-3">
+            <button
+              onClick={() => {
+                sounds.playClick();
+                setAuthModalOpen(true);
+              }}
+              className="px-6 py-3 rounded-xl bg-[#12544F] text-white text-xs font-bold shadow-md hover:bg-[#0E423E] transition-all flex items-center gap-2 hover:scale-105"
+            >
+              <LogIn className="w-4 h-4" />
+              <span>Login / Register Account</span>
+            </button>
             <Link
               href="/"
               onClick={() => sounds.playClick()}
-              className="px-5 py-2.5 rounded-xl bg-[#12544F] text-white text-xs font-bold shadow-sm hover:bg-[#0E423E] transition-all"
+              className="px-5 py-3 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200 transition-all"
             >
               Back to Dashboard
             </Link>
           </div>
         </div>
+
+        <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} />
       </div>
     );
   }
