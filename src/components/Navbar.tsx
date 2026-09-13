@@ -85,15 +85,17 @@ export default function Navbar() {
                     </span>
                   </div>
 
-                  {/* Contextual Sub-label */}
+                  {/* Sub-label */}
                   <div className="flex items-center gap-1.5 mt-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-[#12544F] animate-pulse" />
                     <span className="text-[10px] font-extrabold tracking-wider uppercase text-[#64748B]">
                       {user ? user.name : 'Worker Portal'}
                     </span>
-                    <span className="px-1.5 py-0.5 rounded-md bg-[#8BBB92]/20 border border-[#8BBB92]/30 text-[9px] font-black text-[#12544F] tracking-wide">
-                      {user ? `Tier ${(user.withdrawalCount || 0) + 1}` : 'PKR REWARDS'}
-                    </span>
+                    {user && (
+                      <span className="px-1.5 py-0.5 rounded-md bg-[#8BBB92]/20 border border-[#8BBB92]/30 text-[9px] font-black text-[#12544F] tracking-wide">
+                        Tier {(user.withdrawalCount || 0) + 1}
+                      </span>
+                    )}
                   </div>
                 </div>
               </Link>
