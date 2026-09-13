@@ -26,7 +26,7 @@ export default function ReferPage() {
 
   const referralUrl = typeof window !== 'undefined'
     ? `${window.location.origin}/?ref=${referralCode}`
-    : `https://watchandearn.vercel.app/?ref=${referralCode}`;
+    : `https://vids-earn.vercel.app/?ref=${referralCode}`;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(referralUrl);

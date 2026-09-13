@@ -7,14 +7,14 @@ import { getUserProfile, saveUserProfile, creditCoins } from '@/lib/storage';
 import { sounds } from '@/lib/audio';
 
 const REWARDS = [
-  { label: '5 Coins', value: 5, color: '#f59e0b' },
-  { label: '10 Coins', value: 10, color: '#3b82f6' },
-  { label: '15 Coins', value: 15, color: '#10b981' },
-  { label: '8 Coins', value: 8, color: '#8b5cf6' },
-  { label: '20 Coins', value: 20, color: '#ec4899' },
-  { label: '12 Coins', value: 12, color: '#06b6d4' },
-  { label: '25 Coins', value: 25, color: '#f97316' },
-  { label: '50 Coins 🌟', value: 50, color: '#eab308' },
+  { label: 'Rs. 2 PKR', value: 2, color: '#f59e0b' },
+  { label: 'Rs. 5 PKR', value: 5, color: '#3b82f6' },
+  { label: 'Rs. 1 PKR', value: 1, color: '#10b981' },
+  { label: 'Rs. 3 PKR', value: 3, color: '#8b5cf6' },
+  { label: 'Rs. 10 PKR', value: 10, color: '#ec4899' },
+  { label: 'Rs. 4 PKR', value: 4, color: '#06b6d4' },
+  { label: 'Rs. 8 PKR', value: 8, color: '#f97316' },
+  { label: 'Rs. 15 PKR 🌟', value: 15, color: '#eab308' },
 ];
 
 export default function DailySpinWheel() {

@@ -91,8 +91,18 @@ export default function AdminPage() {
       setIsAuthenticated(true);
     }
     loadData();
+    syncWithCloud().then(() => loadData());
+
+    // Real-time auto-polling every 4 seconds in Admin Portal
+    const pollInterval = setInterval(() => {
+      syncWithCloud().then(() => loadData());
+    }, 4000);
+
     window.addEventListener('watch-earn-update', loadData);
-    return () => window.removeEventListener('watch-earn-update', loadData);
+    return () => {
+      window.removeEventListener('watch-earn-update', loadData);
+      clearInterval(pollInterval);
+    };
   }, []);
 
   // When admin pastes a YouTube URL, analyze it automatically!
@@ -319,6 +329,7 @@ export default function AdminPage() {
           onClick={() => {
             sounds.playClick();
             setActiveTab('withdrawals');
+            syncWithCloud().then(() => loadData());
           }}
           className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all shrink-0 ${
             activeTab === 'withdrawals'
@@ -339,6 +350,7 @@ export default function AdminPage() {
           onClick={() => {
             sounds.playClick();
             setActiveTab('tasks');
+            syncWithCloud().then(() => loadData());
           }}
           className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all shrink-0 ${
             activeTab === 'tasks'
@@ -354,6 +366,7 @@ export default function AdminPage() {
           onClick={() => {
             sounds.playClick();
             setActiveTab('users');
+            syncWithCloud().then(() => loadData());
           }}
           className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all shrink-0 ${
             activeTab === 'users'
@@ -369,6 +382,7 @@ export default function AdminPage() {
           onClick={() => {
             sounds.playClick();
             setActiveTab('notifications');
+            syncWithCloud().then(() => loadData());
           }}
           className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all shrink-0 ${
             activeTab === 'notifications'

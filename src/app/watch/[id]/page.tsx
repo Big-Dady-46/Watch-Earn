@@ -36,19 +36,33 @@ export default function WatchPage() {
   useEffect(() => {
     if (!taskId) return;
 
-    const currentTask = getTaskById(taskId);
-    if (!currentTask) {
-      router.push('/tasks');
-      return;
-    }
+    const loadTask = async () => {
+      let currentTask = getTaskById(taskId);
+      if (!currentTask) {
+        try {
+          const res = await fetch('/api/tasks');
+          if (res.ok) {
+            const data = await res.json();
+            currentTask = (data.tasks || []).find((t: VideoTask) => t.id === taskId);
+          }
+        } catch {}
+      }
 
-    setTask(currentTask);
-    const currentUser = getCurrentUser();
-    setUser(currentUser);
-    setIsCompleted(currentUser?.completedTasksToday?.includes(taskId) || false);
+      if (!currentTask) {
+        router.push('/tasks');
+        return;
+      }
 
-    const all = getTasks();
-    setNextTasks(all.filter((t) => t.id !== taskId && t.active).slice(0, 3));
+      setTask(currentTask);
+      const currentUser = getCurrentUser();
+      setUser(currentUser);
+      setIsCompleted(currentUser?.completedTasksToday?.includes(taskId) || false);
+
+      const all = getTasks();
+      setNextTasks(all.filter((t) => t.id !== taskId && t.active).slice(0, 3));
+    };
+
+    loadTask();
   }, [taskId, router]);
 
   if (!task) {

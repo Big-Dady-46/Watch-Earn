@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Trophy, Medal, Crown, Flame, Coins, Tv, Sparkles, UserCheck } from 'lucide-react';
 import Link from 'next/link';
-import { getLeaderboard } from '@/lib/storage';
+import { getLeaderboard, syncWithCloud } from '@/lib/storage';
 import { LeaderboardUser } from '@/types';
 import { sounds } from '@/lib/audio';
 
@@ -12,6 +12,7 @@ export default function LeaderboardPage() {
 
   useEffect(() => {
     setUsers(getLeaderboard());
+    syncWithCloud().then(() => setUsers(getLeaderboard()));
     const handleUpdate = () => setUsers(getLeaderboard());
     window.addEventListener('watch-earn-update', handleUpdate);
     return () => window.removeEventListener('watch-earn-update', handleUpdate);
