@@ -62,11 +62,11 @@ export default function Navbar() {
                 onClick={() => sounds.playClick()}
                 className="flex items-center gap-3 group"
               >
-                <div className="w-10 h-10 rounded-2xl overflow-hidden shadow-md shadow-[#12544F]/20 group-hover:scale-105 transition-transform border border-amber-400/30 bg-black flex items-center justify-center">
+                <div className="w-10 h-10 flex items-center justify-center group-hover:scale-110 transition-transform">
                   <img
-                    src="/logo.png"
+                    src="/logo.svg"
                     alt="Watch & Earn Logo"
-                    className="w-full h-full object-cover"
+                    className="w-10 h-10 object-contain drop-shadow-md"
                   />
                 </div>
                 <div>

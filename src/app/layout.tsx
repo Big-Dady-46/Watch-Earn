@@ -35,6 +35,7 @@ export default function RootLayout({
         <title>Watch & Earn - Real Rupees Payouts</title>
         <meta name="description" content="Watch verified YouTube videos and earn real money in PKR. Instant withdrawals via EasyPaisa, JazzCash, and Bank Accounts." />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
         <link rel="icon" type="image/png" href="/favicon.png" />
         <link rel="shortcut icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" href="/logo.png" />
@@ -51,18 +52,18 @@ export default function RootLayout({
 
         <MobileBottomNav onOpenAuth={() => setAuthModalOpen(true)} />
 
-        {/* Global Footer */}
+        {/* Global Footer in Signature Ivory & Pine Teal Palette */}
         <footer className="border-t border-black/[0.06] bg-white/80 backdrop-blur-md mt-20 relative z-10">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               
               <div className="space-y-3">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-xl overflow-hidden bg-black flex items-center justify-center shadow-md shadow-[#12544F]/20 border border-amber-400/30">
+                  <div className="w-10 h-10 flex items-center justify-center">
                     <img
-                      src="/logo.png"
+                      src="/logo.svg"
                       alt="Watch & Earn Logo"
-                      className="w-full h-full object-cover"
+                      className="w-10 h-10 object-contain drop-shadow-md"
                     />
                   </div>
                   <span className="font-black text-lg tracking-tight text-[#111827]">
