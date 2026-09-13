@@ -1,0 +1,76 @@
+@import "tailwindcss";
+
+:root {
+  --primary-deep: #12544F;
+  --secondary-mint: #8BBB92;
+  --neutral-black: #111827;
+  --neutral-dark: #0A0A0A;
+  --canvas-bg: #F8F9F8;
+  --card-bg: #FFFFFF;
+  --border-subtle: rgba(18, 84, 79, 0.08);
+}
+
+body {
+  background-color: var(--canvas-bg);
+  color: var(--neutral-black);
+  font-family: var(--font-montserrat), 'Montserrat', -apple-system, BlinkMacSystemFont, sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+  line-height: 1.6;
+  letter-spacing: -0.01em;
+  /* Ambient subtle canvas background with #12544F and #8BBB92 mesh */
+  background-image: 
+    radial-gradient(at 15% 15%, rgba(18, 84, 79, 0.05) 0px, transparent 45%),
+    radial-gradient(at 85% 20%, rgba(139, 187, 146, 0.08) 0px, transparent 50%),
+    radial-gradient(at 50% 85%, rgba(18, 84, 79, 0.04) 0px, transparent 45%);
+  background-attachment: fixed;
+}
+
+/* Elegant Headings & Typography with clean line spacing */
+h1, h2, h3, h4, h5, h6 {
+  letter-spacing: -0.02em;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+/* Luxury Cards with #12544F hairline borders */
+.ivory-card {
+  background: #ffffff;
+  border: 1px solid rgba(18, 84, 79, 0.08);
+  border-radius: 28px;
+  box-shadow: 
+    0 10px 30px -4px rgba(18, 84, 79, 0.04),
+    0 3px 10px -2px rgba(18, 84, 79, 0.02);
+  transition: all 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ivory-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(18, 84, 79, 0.18);
+  box-shadow: 
+    0 16px 36px -4px rgba(18, 84, 79, 0.08),
+    0 4px 14px -2px rgba(18, 84, 79, 0.03);
+}
+
+/* Soft Pills */
+.soft-pill {
+  background: #ffffff;
+  border: 1px solid rgba(18, 84, 79, 0.08);
+  box-shadow: 0 2px 8px -2px rgba(18, 84, 79, 0.03);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+::-webkit-scrollbar-track {
+  background: #F8F9F8;
+}
+::-webkit-scrollbar-thumb {
+  background: #8BBB92;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #12544F;
+}
