@@ -10,7 +10,7 @@ import {
   ArrowLeft 
 } from 'lucide-react';
 import Link from 'next/link';
-import { getTasks, getCurrentUser } from '@/lib/storage';
+import { getTasks, getCurrentUser, getCategories } from '@/lib/storage';
 import { VideoTask, UserAccount } from '@/types';
 import TaskCard from '@/components/TaskCard';
 import { sounds } from '@/lib/audio';
@@ -18,12 +18,15 @@ import { sounds } from '@/lib/audio';
 export default function TasksPage() {
   const [tasks, setTasks] = useState<VideoTask[]>([]);
   const [user, setUser] = useState<UserAccount | null>(null);
+  const [categories, setCategories] = useState<string[]>(['All']);
+  const [selectedCategory, setSelectedCategory] = useState('All');
   const [filterMode, setFilterMode] = useState<'all' | 'pending' | 'completed'>('all');
   const [midnightCountdown, setMidnightCountdown] = useState('');
 
   const loadData = () => {
     setTasks(getTasks());
     setUser(getCurrentUser());
+    setCategories(['All', ...getCategories()]);
   };
 
   useEffect(() => {
@@ -59,9 +62,9 @@ export default function TasksPage() {
   const filteredTasks = tasks.filter((t) => {
     if (!t.active) return false;
     const isDone = completedIds.includes(t.id);
-    if (filterMode === 'pending') return !isDone;
-    if (filterMode === 'completed') return isDone;
-    return true;
+    const matchesStatus = filterMode === 'all' || (filterMode === 'pending' ? !isDone : isDone);
+    const matchesCat = selectedCategory === 'All' || t.category.toLowerCase() === selectedCategory.toLowerCase();
+    return matchesStatus && matchesCat;
   });
 
   const totalPotentialPKR = tasks.filter((t) => t.active).reduce((sum, t) => sum + t.rewardPKR, 0);
@@ -171,6 +174,26 @@ export default function TasksPage() {
         >
           Completed Today ({completedIds.length})
         </button>
+      </div>
+
+      {/* Category Pills Filter */}
+      <div className="flex items-center gap-1.5 overflow-x-auto max-w-full pb-1 scrollbar-none">
+        {categories.map((cat) => (
+          <button
+            key={cat}
+            onClick={() => {
+              sounds.playClick();
+              setSelectedCategory(cat);
+            }}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 whitespace-nowrap ${
+              selectedCategory === cat
+                ? 'bg-[#12544F] text-white shadow-sm'
+                : 'bg-white text-[#64748B] border border-black/[0.04] hover:bg-slate-50'
+            }`}
+          >
+            {cat}
+          </button>
+        ))}
       </div>
 
       {/* Task Rows / Strips ("choti si patti") */}

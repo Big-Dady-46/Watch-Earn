@@ -18,7 +18,9 @@ import {
   Award,
   Sparkles,
   ExternalLink,
-  Layers
+  Layers,
+  Plus,
+  Tag
 } from 'lucide-react';
 import { 
   getTasks, 
@@ -30,7 +32,10 @@ import {
   getAllUsers, 
   getAdminNotifications, 
   markAllNotificationsRead,
-  resetStorage 
+  resetStorage,
+  getCategories,
+  addCategory,
+  deleteCategory
 } from '@/lib/storage';
 import { VideoTask, WithdrawalRequest, UserAccount, AdminNotification } from '@/types';
 import { extractYouTubeId, getYouTubeThumbnail, calculateRewardPKR, fetchYouTubeOEmbed } from '@/lib/youtube';
@@ -50,6 +55,11 @@ export default function AdminPage() {
   const [users, setUsers] = useState<UserAccount[]>([]);
   const [notifications, setNotifications] = useState<AdminNotification[]>([]);
 
+  // Category Management State
+  const [categories, setCategories] = useState<string[]>([]);
+  const [newCategoryInput, setNewCategoryInput] = useState('');
+  const [showAddCategory, setShowAddCategory] = useState(false);
+
   // 1-Click Add Task Form State
   const [videoUrl, setVideoUrl] = useState('');
   const [detectedId, setDetectedId] = useState<string | null>(null);
@@ -65,6 +75,11 @@ export default function AdminPage() {
     setWithdrawals(getWithdrawals());
     setUsers(getAllUsers());
     setNotifications(getAdminNotifications());
+    const cats = getCategories();
+    setCategories(cats);
+    if (cats.length > 0 && (!category || !cats.includes(category))) {
+      setCategory(cats[0]);
+    }
   };
 
   useEffect(() => {
@@ -111,6 +126,30 @@ export default function AdminPage() {
     setIsAuthenticated(false);
     sessionStorage.removeItem('we_admin_auth');
     setPinInput('');
+  };
+
+  const handleAddCategorySubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const clean = newCategoryInput.trim();
+    if (!clean) return;
+    const updated = addCategory(clean);
+    setCategories(updated);
+    setCategory(clean);
+    setNewCategoryInput('');
+    sounds.playClick();
+  };
+
+  const handleDeleteCategory = (catToDelete: string) => {
+    if (categories.length <= 1) {
+      alert('At least one category must exist!');
+      return;
+    }
+    const updated = deleteCategory(catToDelete);
+    setCategories(updated);
+    if (category.toLowerCase() === catToDelete.toLowerCase()) {
+      setCategory(updated[0] || 'General');
+    }
+    sounds.playClick();
   };
 
   const handleAddTask = (e: React.FormEvent) => {
@@ -555,20 +594,92 @@ export default function AdminPage() {
 
               {/* Category */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                  Category:
-                </label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                    Category:
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setShowAddCategory(!showAddCategory)}
+                    className="text-xs font-bold text-emerald-600 hover:text-emerald-700 flex items-center gap-1 transition-colors"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>{showAddCategory ? 'Close' : '+ Add New Category'}</span>
+                  </button>
+                </div>
+
                 <select
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-slate-900 text-xs focus:outline-none focus:border-emerald-500"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-slate-900 text-xs font-semibold focus:outline-none focus:border-emerald-500 bg-white"
                 >
-                  <option value="Technology">Technology</option>
-                  <option value="Earning">Online Earning</option>
-                  <option value="Music">Music</option>
-                  <option value="Gaming">Gaming</option>
-                  <option value="Tutorials">Tutorials</option>
+                  {categories.map((cat) => (
+                    <option key={cat} value={cat}>
+                      {cat}
+                    </option>
+                  ))}
                 </select>
+
+                {/* Inline Category Adder & Manager */}
+                {showAddCategory && (
+                  <div className="mt-2.5 p-3 rounded-xl bg-emerald-50/70 border border-emerald-200 space-y-2.5 animate-fadeIn">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-bold text-emerald-900 flex items-center gap-1">
+                        <Tag className="w-3.5 h-3.5" />
+                        <span>Create New Category</span>
+                      </span>
+                      <span className="text-[10px] text-emerald-600 font-semibold">Auto-saved</span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        placeholder="e.g. Islamic, News, Sports, Vlogs..."
+                        value={newCategoryInput}
+                        onChange={(e) => setNewCategoryInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleAddCategorySubmit();
+                          }
+                        }}
+                        className="flex-1 px-3 py-1.5 rounded-lg border border-emerald-300 text-xs bg-white text-slate-900 focus:outline-none focus:border-emerald-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleAddCategorySubmit()}
+                        className="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition-all shrink-0"
+                      >
+                        Add
+                      </button>
+                    </div>
+
+                    {/* Active Categories Badges */}
+                    <div className="pt-1">
+                      <div className="text-[10px] text-slate-500 font-semibold mb-1">Active Categories:</div>
+                      <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
+                        {categories.map((c) => (
+                          <span
+                            key={c}
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white border border-slate-200 text-[11px] font-medium text-slate-700"
+                          >
+                            <span>{c}</span>
+                            {categories.length > 1 && (
+                              <button
+                                type="button"
+                                title={`Delete category ${c}`}
+                                onClick={() => handleDeleteCategory(c)}
+                                className="text-slate-400 hover:text-red-600 ml-0.5 text-xs font-bold leading-none"
+                              >
+                                ×
+                              </button>
+                            )}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <button

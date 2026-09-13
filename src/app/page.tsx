@@ -20,7 +20,7 @@ import {
   HelpCircle,
   Zap
 } from 'lucide-react';
-import { getTasks, getCurrentUser, getMinimumWithdrawal } from '@/lib/storage';
+import { getTasks, getCurrentUser, getMinimumWithdrawal, getCategories } from '@/lib/storage';
 import { VideoTask, UserAccount } from '@/types';
 import TaskCard from '@/components/TaskCard';
 import { sounds } from '@/lib/audio';
@@ -28,12 +28,14 @@ import { sounds } from '@/lib/audio';
 export default function HomePage() {
   const [tasks, setTasks] = useState<VideoTask[]>([]);
   const [user, setUser] = useState<UserAccount | null>(null);
+  const [categories, setCategories] = useState<string[]>(['All']);
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
 
   const loadData = () => {
     setTasks(getTasks());
     setUser(getCurrentUser());
+    setCategories(['All', ...getCategories()]);
   };
 
   useEffect(() => {
@@ -45,8 +47,6 @@ export default function HomePage() {
       window.removeEventListener('storage', loadData);
     };
   }, []);
-
-  const categories = ['All', 'Technology', 'Earning', 'Music', 'Gaming'];
 
   const filteredTasks = tasks.filter((t) => {
     if (!t.active) return false;
@@ -390,7 +390,7 @@ export default function HomePage() {
               />
             </div>
             
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1.5 overflow-x-auto max-w-full pb-1 sm:pb-0 scrollbar-none">
               {categories.map((cat) => (
                 <button
                   key={cat}
@@ -398,7 +398,7 @@ export default function HomePage() {
                     sounds.playClick();
                     setSelectedCategory(cat);
                   }}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 whitespace-nowrap ${
                     selectedCategory === cat
                       ? 'bg-[#12544F] text-white shadow-sm'
                       : 'bg-white text-[#64748B] border border-black/[0.04] hover:bg-slate-50'

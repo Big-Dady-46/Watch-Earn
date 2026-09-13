@@ -8,6 +8,7 @@ const STORAGE_KEYS = {
   WITHDRAWALS: 'we_prod_withdrawals_v1',
   NOTIFICATIONS: 'we_prod_notifications_v1',
   LAST_RESET_DATE: 'we_prod_last_reset_v1',
+  CATEGORIES: 'we_prod_categories_v1',
 };
 
 // Automatic one-time purge of all previous dummy/test data stored in browser localStorage
@@ -281,6 +282,61 @@ export function toggleTaskStatus(id: string): boolean {
     notifyChange();
   }
   return true;
+}
+
+// ----------------- CATEGORY MANAGEMENT -----------------
+export const DEFAULT_CATEGORIES: string[] = [
+  'Technology',
+  'Earning',
+  'Music',
+  'Gaming',
+  'Tutorials',
+  'Entertainment',
+];
+
+export function getCategories(): string[] {
+  if (typeof window === 'undefined') return DEFAULT_CATEGORIES;
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.CATEGORIES);
+    if (!raw) {
+      localStorage.setItem(STORAGE_KEYS.CATEGORIES, JSON.stringify(DEFAULT_CATEGORIES));
+      return DEFAULT_CATEGORIES;
+    }
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      return parsed;
+    }
+    return DEFAULT_CATEGORIES;
+  } catch {
+    return DEFAULT_CATEGORIES;
+  }
+}
+
+export function addCategory(name: string): string[] {
+  const trimmed = name.trim();
+  if (!trimmed) return getCategories();
+
+  const current = getCategories();
+  const exists = current.some((c) => c.toLowerCase() === trimmed.toLowerCase());
+  if (exists) return current;
+
+  const updated = [...current, trimmed];
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(STORAGE_KEYS.CATEGORIES, JSON.stringify(updated));
+    notifyChange();
+  }
+  return updated;
+}
+
+export function deleteCategory(name: string): string[] {
+  const current = getCategories();
+  const updated = current.filter((c) => c.toLowerCase() !== name.toLowerCase());
+  const finalCategories = updated.length > 0 ? updated : ['General'];
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(STORAGE_KEYS.CATEGORIES, JSON.stringify(finalCategories));
+    notifyChange();
+  }
+  return finalCategories;
 }
 
 // Complete a video task: Credit user account with PKR
